@@ -170,7 +170,7 @@ Message: ${message}`;
                     type="text" 
                     name="name"
                     value={formData.name}
-                    placeholder="Idara Etim" 
+                    placeholder="Faith David" 
                     onChange={handleChange}
                     className="bg-[#002B35] p-4 pr-12 rounded-xl border border-[#00DA6B] border-opacity-30 w-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00DA6B] focus:border-transparent transition-all"
                   />
@@ -192,7 +192,7 @@ Message: ${message}`;
                     type="email" 
                     name="email"
                     value={formData.email}
-                    placeholder="idraezynoks@gmail.com" 
+                    placeholder="example@gmail.com" 
                     onChange={handleChange}
                     className="bg-[#002B35] p-4 pr-12 rounded-xl border border-[#00DA6B] border-opacity-30 w-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00DA6B] focus:border-transparent transition-all"
                   />
