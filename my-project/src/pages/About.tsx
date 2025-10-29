@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import profileImage from "../assets/profileImage.jpg";
 import { Heart, ShoppingBag, Palette } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function About() {
   const fadeInUp = {
@@ -219,17 +220,17 @@ export default function About() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <a href="/latest">
+              <Link to="/latest">
                 <button className="px-8 py-4 bg-[#001E23] text-[#00DD75] font-bold rounded-lg hover:bg-opacity-90 transition text-lg border-2 border-[#001E23]">
                   Shop Now
                 </button>
-              </a>
+              </Link>
 
-              <a href="/contact">
+              <Link to="/contact">
                 <button className="px-8 py-4 bg-[#001E23] text-[#00DD75] font-bold rounded-lg hover:bg-opacity-90 transition text-lg border-2 border-[#001E23]">
                   Get in Touch
                 </button>
-              </a>
+              </Link>
             </div>
           </motion.div>
         </div>

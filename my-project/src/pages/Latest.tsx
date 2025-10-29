@@ -185,9 +185,9 @@ function Latest({ cart, setCart }: LatestProps) {
             each new item is carefully chosen to reflect creativity, confidence, and comfort. Explore bold colors, timeless fits, 
             and artistic designs that tell your story. Because your style isn’t just what you wear — it’s how you live.
           </p>
-          <a href="/about"><button className="bg-[#00DA6B] p-2 px-5 rounded-xl text-white text-xl hover:bg-[#1d9948] transition">
+          <Link to="/about"><button className="bg-[#00DA6B] p-2 px-5 rounded-xl text-white text-xl hover:bg-[#1d9948] transition">
             Learn More
-          </button></a>
+          </button></Link>
         </div>
         <div className="w-full lg:w-1/2">
           <img

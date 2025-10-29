@@ -246,9 +246,9 @@ function FeaturedProduct () {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6, duration: 0.8 }}
       >
-        <a href="/latest"><button className="bg-[#00DA6B] hover:bg-[#00FF7F] text-[#001E23] font-bold px-8 py-3 rounded-full text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-[#00DA6B]/50">
+        <Link to="/latest"><button className="bg-[#00DA6B] hover:bg-[#00FF7F] text-[#001E23] font-bold px-8 py-3 rounded-full text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-[#00DA6B]/50">
           View All Products
-        </button></a>
+        </button></Link>
       </motion.div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Mail, MapPin, PhoneCall, UserRound, MessageSquare, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface FormData {
   name: string;
@@ -248,12 +249,11 @@ Message: ${message}`;
         <p className="text-gray-400 mb-4">
           Prefer to shop first? Check out our latest collection!
         </p>
-        <a
-          href="/latest"
+        <Link to="/latest"
           className="inline-block px-8 py-3 bg-[#002A35] border-2 border-[#00DA6B] text-[#00DA6B] font-bold rounded-full hover:bg-[#00DA6B] hover:text-[#001E23] transition-all duration-300"
         >
           Browse Our Shop
-        </a>
+        </Link>
       </motion.div>
     </div>
   );
