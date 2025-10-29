@@ -19,10 +19,10 @@ Lucide React - Beautiful icon library
 
 📦 Installation
 bash# Clone the repository
-git clone https://github.com/Idraezy/dali-wear.git
+git clone https://github.com/Idraezy/dali.git
 
 # Navigate to project directory
-cd dali-wear
+cd dali
 
 # Install dependencies
 npm install
@@ -45,7 +45,7 @@ npm run type-check
 
 ## 📁 Project Structure
 ```
-dali-wear/
+dali/
 ├── src/
 │   ├── components/     # Reusable UI components
 │   ├── pages/          # Page components
