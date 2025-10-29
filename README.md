@@ -19,7 +19,7 @@ Lucide React - Beautiful icon library
 
 📦 Installation
 bash# Clone the repository
-git clone https://github.com/yourusername/dali-wear.git
+git clone https://github.com/Idraezy/dali-wear.git
 
 # Navigate to project directory
 cd dali-wear
@@ -69,6 +69,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 📄 License
 This project is licensed under the MIT License.
 📧 Contact
-For inquiries, please reach out to [your-email@example.com]
+For inquiries, please reach out to idraezynoks@gmail.com
 
 Made with ❤️ by Dali Wear
