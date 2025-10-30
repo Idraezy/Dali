@@ -83,10 +83,10 @@ function Latest({ cart, setCart }: LatestProps) {
     { id: 18, image: pin8, name: "Sophisticated", price: "₦5,500", category: "Frames", description: "Sophisticated frame collection for the refined taste." },
     { id: 19, image: pin2, name: "Nature's Touch", price: "₦5,500", category: "Frames", description: "Nature-inspired frames with organic beauty." },
     { id: 20, image: pin3, name: "Royal Experience", price: "₦5,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 21, image: pin4, name: "Royal Experience", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 22, image: pin5, name: "Royal Experience", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 23, image: pin6, name: "Royal Experience", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 24, image: pin7, name: "Royal Experience", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    { id: 21, image: pin4, name: "8x10 Tiny black Frame", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    { id: 22, image: pin5, name: "8x10 Inches Frame", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    { id: 23, image: pin6, name: "16x24 Inches Acrylic", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    { id: 24, image: pin7, name: "8x10 Inches Culture Frame", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
   ];
 
   const filteredProducts = products.filter((product) => {
