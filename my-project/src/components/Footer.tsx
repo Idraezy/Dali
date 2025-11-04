@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Instagram, Facebook, Twitter, Mail, MapPin, Phone } from "lucide-react";
+import { Twitter, Mail, MapPin, Phone, InstagramIcon } from "lucide-react";
+import {  Whatsapp } from "iconsax-react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -40,6 +41,7 @@ function Footer() {
             </p>
             {/* Social Media */}
             <div className="flex gap-4 pt-2">
+              
               <motion.a
                 href="https://instagram.com/dali_wears"
                 target="_blank"
@@ -48,17 +50,20 @@ function Footer() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <Instagram size={20} />
+                
+                <InstagramIcon size={20}/>
+                
               </motion.a>
               <motion.a
-                href="https://facebook.com/daliwears"
+                href="https://wa.me/2349164288560"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#002A35] p-2 rounded-full hover:bg-[#00DA6B] hover:text-[#001E23] transition-all duration-300"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <Facebook size={20} />
+                
+                <Whatsapp size="20" color="currentColor" variant="Bold" className="text-white hover:text-[#001E23] transition-colors duration-300" />
               </motion.a>
               <motion.a
                 href="https://twitter.com/daliwears"
