@@ -90,11 +90,12 @@ export default function Header({ cart = [] }: HeaderProps) {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14">
+                <Link to='/about'>
                 <img
                   src={profileImage}
                   alt="Profile"
                   className="w-full h-full rounded-full object-cover border-2 border-[#00DA6B] shadow-lg"
-                />
+                /></Link>
                 {/* Status Dot */}
                 <div
                   className={`absolute -top-0 -right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full ${dotColor} animate-pulse border-2 border-white shadow-lg`}

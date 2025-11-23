@@ -69,12 +69,14 @@ function HomePage() {
           </motion.div>
 
           {/* Right Side - Image Carousel */}
+        
           <motion.div
             className="relative w-full lg:w-1/2 h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, ease: "easeOut" }}
           >
+             
             <AnimatePresence mode="wait">
               <motion.img
                 key={currentImageIndex}
@@ -87,6 +89,9 @@ function HomePage() {
                 transition={{ duration: 0.7, ease: "easeInOut" }}
               />
             </AnimatePresence>
+            
+          
+            
 
             {/* Image Indicators */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
@@ -101,13 +106,16 @@ function HomePage() {
                   }`}
                   aria-label={`Go to image ${index + 1}`}
                 />
+                
               ))}
             </div>
+            
 
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
           </motion.div>
         </div>
+        
 
         {/* Shop Now Button */}
         <motion.div
