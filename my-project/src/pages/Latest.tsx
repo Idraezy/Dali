@@ -11,21 +11,44 @@ import sales7 from "../assets/sales7.jpg";
 import sales8 from "../assets/sales8.jpg";
 import sales9 from "../assets/sales9.jpg";
 import sales10 from "../assets/sales10.jpg";
-import sales11 from "../assets/sales11.jpg";
-import sales12 from "../assets/sales12.jpg";
-import sales13 from "../assets/sales13.jpg";
-import sales14 from "../assets/sales14.jpg";
-import sales15 from "../assets/sales15.jpg";
-import sales16 from "../assets/sales16.jpg";
+// import sales11 from "../assets/sales11.jpg";
+// import sales12 from "../assets/sales12.jpg";
+// import sales13 from "../assets/sales13.jpg";
+import sales14 from "../assets/sales14.jpeg";
+import sales15 from "../assets/sales15.jpeg";
+// import sales16 from "../assets/sales16.jpeg";
+import sales17 from "../assets/sales17.jpg";
+import sales18 from "../assets/sales18.jpg"
+import sales20 from "../assets/sales20.jpeg"
+import sales19 from "../assets/sales19.jpeg"
+import sales22 from "../assets/sales22.jpg"
+import sales21 from "../assets/sales21.jpg"
+import sales27 from "../assets/sales27.jpg"
+import sales28 from "../assets/sales28.jpg"
+// import sales23 from "../assets/sales23.jpeg"
+// import sales24 from "../assets/sales24.jpeg"
+// import sales25 from "../assets/sales25.jpeg"
+// import sales26 from "../assets/sales26.jpeg"
 import pin1 from "../assets/pin1.jpg";
 import pin2 from "../assets/pin2.jpg";
 import pin3 from "../assets/pin3.jpg";
-import pin4 from "../assets/pin4.jpg";
-import pin5 from "../assets/pin5.jpg";
-import pin6 from "../assets/pin6.jpg";
-import pin7 from "../assets/pin7.jpg";
+// import pin4 from "../assets/pin4.jpg";
+// import pin5 from "../assets/pin5.jpg";
+// import pin6 from "../assets/pin6.jpg";
+// import pin7 from "../assets/pin7.jpg";
 import pin8 from "../assets/pin8.jpg";
 import dali5 from "../assets/dali5.jpg"
+import maxi1 from "../assets/maxi1.jpeg"
+import maxi2 from "../assets/maxi2.jpg"
+import maxi3 from "../assets/maxi3.jpg"
+import maxi4 from "../assets/maxi4.jpg"
+import maxi5 from "../assets/maxi5.jpeg"
+import maxi6 from "../assets/maxi6.jpg"
+import maxi7 from "../assets/maxi7.jpg"
+import maxi8 from "../assets/maxi8.jpg"
+import maxi9 from "../assets/maxi9.jpg"
+import maxi10 from "../assets/maxi10.jpg"
+import maxi11 from "../assets/maxi11.jpg"
 
 interface Product {
   id: number;
@@ -63,30 +86,55 @@ function Latest({ cart, setCart }: LatestProps) {
   const [notification, setNotification] = useState<string | null>(null);
 
   const products: Product[] = [
+    { id: 25, image: sales17, name: "Pink Long sleeve", price: "₦5,500", category: "Long Sleeves", description: "Pink long sleeve perfect for any wardrobe." },
     { id: 1, image: sales1, name: "Blue Long sleeve", price: "₦5,500", category: "Long Sleeves", description: "A beautiful and comfortable blue long sleeve perfect for any occasion." },
     { id: 2, image: sales2, name: "Red Long sleeve", price: "₦5,500", category: "Long Sleeves", description: "Stunning red long sleeve that makes a bold statement." },
     { id: 3, image: sales3, name: "Black Long sleeve", price: "₦5,500", category: "Long Sleeves", description: "Classic black long sleeve for a timeless look." },
     { id: 4, image: sales4, name: "Brown Long sleeve", price: "₦5,500", category: "Long Sleeves", description: "Elegant brown long sleeve with premium quality fabric." },
     { id: 5, image: sales5, name: "Deep-blue Long sleeve", price: "₦5,500", category: "Long Sleeves", description: "Deep blue long sleeve for a sophisticated appearance." },
     { id: 6, image: sales6, name: "White Long sleeve", price: "₦5,500", category: "Long Sleeves", description: "Pure white long sleeve perfect for any wardrobe." },
-    { id: 7, image: sales7, name: "Black Top", price: "₦4,500", category: "Basic Tops", description: "Essential black top for everyday wear." },
-    { id: 8, image: sales8, name: "Pink Top", price: "₦4,500", category: "Basic Tops", description: "Vibrant pink top that brings color to your day." },
-    { id: 9, image: sales9, name: "White Top", price: "₦4,500", category: "Basic Tops", description: "Crisp white top for a fresh look." },
-    { id: 10, image: sales10, name: "Blue Top", price: "₦4,500", category: "Basic Tops", description: "Cool blue top for casual style." },
-    { id: 11, image: sales11, name: "Blue Backless", price: "₦4,400", category: "Backless Top", description: "Chic blue backless top for a daring look." },
-    { id: 12, image: sales12, name: "Black Backless", price: "₦4,400", category: "Backless Top", description: "Elegant black backless top perfect for special events." },
-    { id: 13, image: sales13, name: "Red Backless", price: "₦4,400", category: "Backless Top", description: "Bold red backless top that turns heads." },
-    { id: 14, image: sales14, name: "Brown Pin-down", price: "₦5,500", category: "Pin Down", description: "Stylish brown pin-down collection." },
-    { id: 15, image: sales15, name: "Blue & Pink Pin-down", price: "₦11,000", category: "Pin Down", description: "Beautiful blue and pink pin-down set." },
-    { id: 16, image: sales16, name: "Brown & Black Pin-down", price: "₦11,000", category: "Pin Down", description: "Premium brown and black pin-down collection." },
-    { id: 17, image: pin1, name: "Elegant Charm", price: "₦5,500", category: "Frames", description: "Elegant frames that add charm to any look." },
-    { id: 18, image: pin8, name: "Sophisticated", price: "₦5,500", category: "Frames", description: "Sophisticated frame collection for the refined taste." },
-    { id: 19, image: pin2, name: "Nature's Touch", price: "₦5,500", category: "Frames", description: "Nature-inspired frames with organic beauty." },
-    { id: 20, image: pin3, name: "Royal Experience", price: "₦5,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 21, image: pin4, name: "8x10 Tiny black Frame", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 22, image: pin5, name: "8x10 Inches Frame", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 23, image: pin6, name: "16x24 Inches Acrylic", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
-    { id: 24, image: pin7, name: "8x10 Inches Culture Frame", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    { id: 7, image: sales7, name: "Black Basic Top", price: "₦4,500", category: "Basic Tops", description: "Essential black top for everyday wear." },
+    { id: 7, image: sales18, name: "Baby-Pink Basic Top", price: "₦4,500", category: "Basic Tops", description: "Essential black top for everyday wear." },
+    { id: 7, image: sales20, name: "Brown Basic Top", price: "₦4,500", category: "Basic Tops", description: "Essential black top for everyday wear." },
+    { id: 7, image: sales19, name: "Yellow Basic Top", price: "₦4,500", category: "Basic Tops", description: "Essential black top for everyday wear." },
+    { id: 7, image: sales22, name: "Royal-Blue Basic Top", price: "₦4,500", category: "Basic Tops", description: "Essential black top for everyday wear." },
+    { id: 7, image: sales21, name: "Navy-Blue Basic Top", price: "₦4,500", category: "Basic Tops", description: "Essential black top for everyday wear." },
+    { id: 8, image: sales8, name: "Bright Pink Basic Top", price: "₦4,500", category: "Basic Tops", description: "Vibrant pink top that brings color to your day." },
+    { id: 9, image: sales9, name: "White Basic Top", price: "₦4,500", category: "Basic Tops", description: "Crisp white top for a fresh look." },
+    { id: 10, image: sales10, name: "Blue Basic Top", price: "₦4,500", category: "Basic Tops", description: "Cool blue top for casual style." },
+    // { id: 11, image: sales11, name: "Blue Backless", price: "₦4,400", category: "Backless Top", description: "Chic blue backless top for a daring look." },
+    // { id: 12, image: sales12, name: "Black Backless", price: "₦4,400", category: "Backless Top", description: "Elegant black backless top perfect for special events." },
+    // { id: 13, image: sales13, name: "Red Backless", price: "₦4,400", category: "Backless Top", description: "Bold red backless top that turns heads." },
+    { id: 14, image: sales14, name: "Brown short-sleeve Pin-down", price: "₦5,500", category: "Pin Down", description: "Stylish brown pin-down collection." },
+    { id: 15, image: sales15, name: "Black short-sleeve Pin-down", price: "₦5,500", category: "Pin Down", description: "Beautiful blue and pink pin-down set." },
+    { id: 15, image: sales27, name: "Pink short-sleeve Pin-down", price: "₦5,500", category: "Pin Down", description: "Beautiful blue and pink pin-down set." },
+    { id: 15, image: sales28, name: "White short-sleeve Pin-down", price: "₦5,500", category: "Pin Down", description: "Beautiful blue and pink pin-down set." },
+    // { id: 16, image: sales16, name: "White Pin-down", price: "₦11,000", category: "Pin Down", description: "Premium brown and black pin-down collection." },
+    // { id: 16, image: sales23, name: "Light-Blue Pin-down", price: "₦11,000", category: "Pin Down", description: "Premium brown and black pin-down collection." },
+    // { id: 16, image: sales24, name: "Brown Pin-down", price: "₦11,000", category: "Pin Down", description: "Premium brown and black pin-down collection." },
+    // { id: 16, image: sales25, name: "Black Pin-down", price: "₦11,000", category: "Pin Down", description: "Premium brown and black pin-down collection." },
+    // { id: 16, image: sales26, name: "Light-Blue Pin-down", price: "₦11,000", category: "Pin Down", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi1, name: "Leopard-print Bodycon Maxi skirt", price: "₦4,000", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi2, name: "Single-slit Black skirt", price: "₦5,000", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi3, name: "Black Maxi skirt", price: "₦4,000", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi4, name: "Brown Maxi skirt", price: "₦4,000", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi5, name: "Combo -Basic Top & Maxi skirt", price: "₦8,500", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+
+    { id: 16, image: maxi6, name: "Leopard-print Bodycon Maxi gown", price: "₦4,500", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi7, name: "Pink Maxi gown", price: "₦4,500", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi8, name: "Red Maxi gown", price: "₦4,500", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi9, name: "Brown Maxi gown", price: "₦4,500", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi10, name: "Black Maxi gown", price: "₦4,500", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+    { id: 16, image: maxi11, name: "Blue Maxi gown", price: "₦4,500", category: "Maxi skirt", description: "Premium brown and black pin-down collection." },
+
+    { id: 17, image: pin1, name: "Elegant Charm", price: "₦5,500", category: "Frames SIZE; A3", description: "Elegant frames that add charm to any look." },
+    { id: 18, image: pin8, name: "Sophisticated  ", price: "₦6,000", category: "Frames SIZE; A4", description: "Sophisticated frame collection for the refined taste." },
+    { id: 19, image: pin2, name: "Nature's Touch A4", price: "₦6,000", category: "Frames SIZE; A4", description: "Nature-inspired frames with organic beauty." },
+    { id: 20, image: pin3, name: "Royal Experience A4", price: "₦10,000", category: "Frames SIZE; A4", description: "Premium royal frames for the ultimate experience." },
+    // { id: 21, image: pin4, name: "8x10 Tiny black Frame", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    // { id: 22, image: pin5, name: "8x10 Inches Frame", price: "₦7,000", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    // { id: 23, image: pin6, name: "16x24 Inches Acrylic", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
+    // { id: 24, image: pin7, name: "8x10 Inches Culture Frame", price: "₦7,500", category: "Frames", description: "Premium royal frames for the ultimate experience." },
   ];
 
   const filteredProducts = products.filter((product) => {

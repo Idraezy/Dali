@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Twitter, Mail, MapPin, Phone, InstagramIcon } from "lucide-react";
+import {  Mail, MapPin, Phone, InstagramIcon } from "lucide-react";
 import {  Whatsapp } from "iconsax-react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { RiTiktokFill } from "react-icons/ri";
 
 function Footer() {
   const [email, setEmail] = useState("");
@@ -66,14 +67,15 @@ function Footer() {
                 <Whatsapp size="20" color="currentColor" variant="Bold" className="text-white hover:text-[#001E23] transition-colors duration-300" />
               </motion.a>
               <motion.a
-                href="https://twitter.com/daliwears"
+                href="http://www.tiktok.com/@clothpinterestframvendor"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#002A35] p-2 rounded-full hover:bg-[#00DA6B] hover:text-[#001E23] transition-all duration-300"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <Twitter size={20} />
+                {/* <Twitter size={20} /> */}
+                <RiTiktokFill size={20}/>
               </motion.a>
             </div>
           </motion.div>
@@ -192,7 +194,7 @@ function Footer() {
       >
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-gray-500 text-xs sm:text-sm text-center sm:text-left">
-            © 2024 Dali Wears. All rights reserved. | Built with 💚
+            © 2025 Dali Wears. All rights reserved. | Built with 💚
           </p>
 
           {/* Checkout Button */}
