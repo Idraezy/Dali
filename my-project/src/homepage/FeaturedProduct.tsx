@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 
 import dali1 from "../assets/dali1.jpg";
-import dali2 from "../assets/dali2.png";
+import dali2 from "../assets/dali2.jpg";
 import dali3 from "../assets/dali3.png";
 import dali4 from "../assets/dali4.png";
-import dali5 from "../assets/dali5.jpg";
+import dali5 from "../assets/dali5.jpeg";
 import dali6 from "../assets/dali6.jpg";
 import dali7 from "../assets/dali7.jpg";
 import dali8 from "../assets/dali8.png";
@@ -18,9 +18,9 @@ import dali12 from "../assets/dali12.jpeg";
 import dali13 from "../assets/dali13.png";
 import dali14 from "../assets/dali14.png";
 import dali15 from "../assets/dali15.png";
-import dali16 from "../assets/dali16.jpg";
+import dali16 from "../assets/dali16.jpeg";
 import dali17 from "../assets/dali17.png";
-import dali18 from "../assets/dali18.jpeg";
+import dali18 from "../assets/dali18.jpg";
 import dali19 from "../assets/dali19.jpg";
 import dali20 from "../assets/dali20.jpg";
 
@@ -33,12 +33,12 @@ interface Product {
 }
 
 const images: Product[] = [
-  { src: dali1, name: "Maxi Gown & Basic Top", price: "₦9,500" },
+  { src: dali1, name: "Maxi Gown & Basic Top", price: "₦8,500" },
   { src: dali2, name: "New Nature", price: "₦4,500" },
   { src: dali3, name: "Blue Basic Top", price: "₦4,500" },
   { src: dali4, name: "Maxi Gown", price: "₦6,000" },
   { src: dali5, name: "Black Basic Top", price: "₦4,500" },
-  { src: dali6, name: "Maxi gown & Basic Top", price: "₦9,500" },
+  { src: dali6, name: "Maxi gown & Basic Top", price: "₦8,500" },
   { src: dali7, name: "Pink Basic Top", price: "₦4,500" },
   { src: dali8, name: "Brown Long-sleeve", price: "₦5,500" },
   { src: dali9, name: "Black Basic Top", price: "₦4,500" },
