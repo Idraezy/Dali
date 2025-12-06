@@ -42,54 +42,55 @@ function LaunchNotification() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -100 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[90%] sm:w-[500px] md:w-[600px]"
+          className="fixed top-2 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] sm:w-[85%] md:w-[600px] lg:w-[650px] px-2 sm:px-0"
         >
-          <div className="bg-gradient-to-r from-[#002A35] to-[#001D23] border-2 border-[#00DA6B] rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-gradient-to-r from-[#002A35] to-[#001D23] border-2 border-[#00DA6B] rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden relative">
             {/* Close Button */}
             <button
               onClick={handleClose}
-              className="absolute top-3 right-3 text-gray-400 hover:text-[#00DA6B] transition-colors duration-200 z-10"
+              className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 text-gray-400 hover:text-[#00DA6B] transition-colors duration-200 z-10 bg-[#001D23] bg-opacity-50 rounded-full hover:bg-opacity-70"
               aria-label="Close notification"
             >
-              <X size={24} />
+              <X size={20} className="sm:hidden" />
+              <X size={24} className="hidden sm:block" />
             </button>
 
             {/* Content */}
-            <div className="p-6 sm:p-8">
+            <div className="p-4 sm:p-6 md:p-8">
               {/* Accent Bar */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00DA6B] to-[#00FFB2]"></div>
 
               {/* Icon or Badge */}
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#00DA6B] bg-opacity-20 rounded-full flex items-center justify-center">
-                    <span className="text-2xl sm:text-3xl">🎉</span>
+              <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
+                <div className="flex-shrink-0 mt-0.5 sm:mt-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-[#00DA6B] bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl md:text-3xl">🎉</span>
                   </div>
                 </div>
 
-                <div className="flex-1 pt-1">
+                <div className="flex-1 pt-0 sm:pt-1 pr-6 sm:pr-8">
                   {/* Heading */}
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#00DA6B] mb-2">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-[#00DA6B] mb-1.5 sm:mb-2 leading-tight">
                     Welcome to DALI WEARS!
                   </h3>
 
                   {/* Message */}
-                  <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-4">
+                  <p className="text-gray-300 text-xs sm:text-sm md:text-base leading-relaxed mb-3 sm:mb-4">
                     We're thrilled to announce the official launch of our website! 
                     Your support means the world to us, and we'd be honored to have 
                     you as part of our fashion journey.
                   </p>
 
                   {/* Discount Badge */}
-                  <div className="inline-flex items-center gap-2 bg-[#00DA6B] bg-opacity-10 border border-[#00DA6B] rounded-lg px-4 py-2 mb-3">
-                    <span className="text-lg">💝</span>
-                    <span className="text-[#00DA6B] font-semibold text-sm sm:text-base">
+                  <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#00DA6B] bg-opacity-10 border border-[#00DA6B] rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 mb-2 sm:mb-3">
+                    <span className="text-base sm:text-lg">💝</span>
+                    <span className="text-[#00DA6B] font-semibold text-xs sm:text-sm md:text-base">
                       Special Launch Discounts Available!
                     </span>
                   </div>
 
                   {/* Footer Message */}
-                  <p className="text-gray-400 text-xs sm:text-sm italic">
+                  <p className="text-gray-400 text-[10px] sm:text-xs md:text-sm italic">
                     Thank you for being here. We love you! ❤️
                   </p>
                 </div>
@@ -97,7 +98,7 @@ function LaunchNotification() {
             </div>
 
             {/* Bottom Accent */}
-            <div className="h-2 bg-gradient-to-r from-transparent via-[#00DA6B] to-transparent opacity-30"></div>
+            <div className="h-1.5 sm:h-2 bg-gradient-to-r from-transparent via-[#00DA6B] to-transparent opacity-30"></div>
           </div>
         </motion.div>
       )}

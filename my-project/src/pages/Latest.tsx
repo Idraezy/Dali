@@ -23,6 +23,7 @@ import sales18 from "../assets/sales18.jpg";
 import sales19 from "../assets/sales19.jpeg";
 import sales20 from "../assets/sales20.jpeg";
 import sales21 from "../assets/sales21.jpg";
+import sales22 from "../assets/sales22.jpg";
 import sales23 from "../assets/sales23.jpg";
 import sales24 from "../assets/sales24.jpg";
 import sales25 from "../assets/sales25.jpg";
@@ -98,14 +99,15 @@ function Latest({ cart, setCart }: LatestProps) {
   { id: 5, image: sales4, name: "Brown Long Sleeve", price: "₦5,500", category: "Long Sleeves", description: "Elegant brown long sleeve top made from quality fabric." },
   { id: 6, image: sales5, name: "Deep Blue Long Sleeve", price: "₦5,500", category: "Long Sleeves", description: "Deep blue long sleeve for a classy and sleek appearance." },
   { id: 7, image: sales6, name: "White Long Sleeve", price: "₦5,500", category: "Long Sleeves", description: "Clean and versatile white long sleeve for all-season wear." },
+  { id: 44, image: sales22, name: "Royal blue Long Sleeve", price: "₦5,500", category: "Long Sleeves", description: "Clean and versatile royal blue long sleeve for all-season wear." },
 
   { id: 8, image: sales7, name: "Black Basic Top", price: "₦4,500", category: "Basic Tops", description: "Essential black basic top perfect for simple everyday outfits." },
-  { id: 9, image: sales18, name: "Baby Pink Basic Top", price: "₦4,500", category: "Basic Tops", description: "Cute baby pink basic top for soft and feminine looks." },
+  { id: 9, image: sales18, name: "Bright Pink Basic Top", price: "₦4,500", category: "Basic Tops", description: "Cute baby pink basic top for soft and feminine looks." },
   { id: 10, image: sales20, name: "Brown Basic Top", price: "₦4,500", category: "Basic Tops", description: "Comfortable brown basic top ideal for casual styling." },
   { id: 11, image: sales19, name: "Yellow Basic Top", price: "₦4,500", category: "Basic Tops", description: "Bright yellow basic top that adds color to your wardrobe." },
   { id: 12, image: sales11, name: "Royal Blue Basic Top", price: "₦4,500", category: "Basic Tops", description: "Vibrant royal blue top for bold and stylish outfits." },
   { id: 13, image: sales21, name: "Navy Blue Basic Top", price: "₦4,500", category: "Basic Tops", description: "Deep navy blue top suitable for relaxed everyday wear." },
-  { id: 14, image: sales8, name: "Bright Pink Basic Top", price: "₦4,500", category: "Basic Tops", description: "Bright pink basic top designed to make you stand out." },
+  { id: 14, image: sales8, name: "Baby Pink Basic Top", price: "₦4,500", category: "Basic Tops", description: "Bright pink basic top designed to make you stand out." },
   { id: 15, image: sales9, name: "White Basic Top", price: "₦4,500", category: "Basic Tops", description: "Classic white basic top for a clean and simple style." },
   { id: 16, image: sales10, name: "Blue Basic Top", price: "₦4,500", category: "Basic Tops", description: "Cool blue basic top for effortless everyday wear." },
 
@@ -113,11 +115,11 @@ function Latest({ cart, setCart }: LatestProps) {
   { id: 18, image: sales15, name: "Black Short-Sleeve Pin-Down", price: "₦5,500", category: "Pin Down", description: "Classic black short-sleeve pin-down ideal for an elegant look." },
   { id: 19, image: sales12, name: "Pink Short-Sleeve Pin-Down", price: "₦5,500", category: "Pin Down", description: "Chic pink short-sleeve pin-down that complements vibrant outfits." },
   { id: 20, image: sales13, name: "White Short-Sleeve Pin-Down", price: "₦5,500", category: "Pin Down", description: "Clean white short-sleeve pin-down suitable for any occasion." },
-  { id: 21, image: sales16, name: "Bright Pink Sleeveless Pin-Down", price: "₦5,500", category: "Pin Down", description: "Bright pink sleeveless pin-down that offers a bold style." },
-  { id: 22, image: sales23, name: "Red Sleeveless Pin-Down", price: "₦5,500", category: "Pin Down", description: "Striking red sleeveless pin-down for confident looks." },
-  { id: 23, image: sales24, name: "Pink Sleeveless Pin-Down", price: "₦5,500", category: "Pin Down", description: "Soft pink sleeveless pin-down that blends comfort and style." },
-  { id: 24, image: sales25, name: "Black Sleeveless Pin-Down", price: "₦5,500", category: "Pin Down", description: "Essential black sleeveless pin-down for a polished finish." },
-  { id: 25, image: sales26, name: "White Sleeveless Pin-Down", price: "₦5,500", category: "Pin Down", description: "Elegant white sleeveless pin-down for chic minimal outfits." },
+  { id: 21, image: sales16, name: "Bright Pink Sleeveless Pin-Down", price: "₦5,000", category: "Pin Down", description: "Bright pink sleeveless pin-down that offers a bold style." },
+  { id: 22, image: sales23, name: "Red Sleeveless Pin-Down", price: "₦5,000", category: "Pin Down", description: "Striking red sleeveless pin-down for confident looks." },
+  { id: 23, image: sales24, name: "Pink Sleeveless Pin-Down", price: "₦5,000", category: "Pin Down", description: "Soft pink sleeveless pin-down that blends comfort and style." },
+  { id: 24, image: sales25, name: "Black Sleeveless Pin-Down", price: "₦5,000", category: "Pin Down", description: "Essential black sleeveless pin-down for a polished finish." },
+  { id: 25, image: sales26, name: "White Sleeveless Pin-Down", price: "₦5,000", category: "Pin Down", description: "Elegant white sleeveless pin-down for chic minimal outfits." },
 
   { id: 26, image: maxi1, name: "Leopard-Print Bodycon Maxi Skirt", price: "₦4,000", category: "Maxi Skirt", description: "Bold leopard-print bodycon skirt perfect for standout looks." },
   { id: 27, image: maxi2, name: "Single-Slit Black Skirt", price: "₦5,000", category: "Maxi Skirt", description: "Stylish black skirt with a side slit for a classy appeal." },
@@ -125,16 +127,16 @@ function Latest({ cart, setCart }: LatestProps) {
   { id: 29, image: maxi4, name: "Brown Maxi Skirt", price: "₦4,000", category: "Maxi Skirt", description: "Chic brown maxi skirt suitable for relaxed, stylish outfits." },
   { id: 30, image: maxi5, name: "Combo Basic Top & Maxi Skirt", price: "₦8,500", category: "Maxi Skirt", description: "Affordable combo set featuring a stylish top and maxi skirt." },
 
-  { id: 31, image: maxi6, name: "Leopard-Print Bodycon Maxi Gown", price: "₦4,500", category: "Maxi Skirt", description: "Eye-catching leopard-print maxi gown for fashionable occasions." },
-  { id: 32, image: maxi7, name: "Pink Maxi Gown", price: "₦4,500", category: "Maxi Skirt", description: "Beautiful pink maxi gown with a flattering silhouette." },
-  { id: 33, image: maxi8, name: "Red Maxi Gown", price: "₦4,500", category: "Maxi Skirt", description: "Striking red maxi gown perfect for making a statement." },
-  { id: 34, image: maxi9, name: "Brown Maxi Gown", price: "₦4,500", category: "Maxi Skirt", description: "Elegant brown maxi gown designed for comfort and style." },
-  { id: 35, image: maxi10, name: "Black Maxi Gown", price: "₦4,500", category: "Maxi Skirt", description: "Sleek black maxi gown suitable for all events." },
-  { id: 36, image: maxi11, name: "Blue Maxi Gown", price: "₦4,500", category: "Maxi Skirt", description: "Soft blue maxi gown with a calm and elegant tone." },
+  { id: 31, image: maxi6, name: "Leopard-Print Bodycon Maxi Gown", price: "₦4,500", category: "Maxi Gown", description: "Eye-catching leopard-print maxi gown for fashionable occasions." },
+  { id: 32, image: maxi7, name: "Pink Maxi Gown", price: "₦4,500", category: "Maxi Gown", description: "Beautiful pink maxi gown with a flattering silhouette." },
+  { id: 33, image: maxi8, name: "Red Maxi Gown", price: "₦4,500", category: "Maxi Gown", description: "Striking red maxi gown perfect for making a statement." },
+  { id: 34, image: maxi9, name: "Brown Maxi Gown", price: "₦4,500", category: "Maxi Gown", description: "Elegant brown maxi gown designed for comfort and style." },
+  { id: 35, image: maxi10, name: "Black Maxi Gown", price: "₦4,500", category: "Maxi Gown", description: "Sleek black maxi gown suitable for all events." },
+  { id: 36, image: maxi11, name: "Blue Maxi Gown", price: "₦4,500", category: "Maxi Gown", description: "Soft blue maxi gown with a calm and elegant tone." },
 
-  { id: 37, image: pin1, name: "A3 Elegant Charm", price: "₦5,500", category: "Frames", description: "A3-sized elegant charm frame for stylish wall decor." },
+  { id: 37, image: pin1, name: "A3 Elegant Charm", price: "₦10,000", category: "Frames", description: "A3-sized elegant charm frame for stylish wall decor." },
   { id: 38, image: pin8, name: "A4 Sophisticated", price: "₦6,000", category: "Frames", description: "Sophisticated A4 frame that complements modern interiors." },
-  { id: 39, image: pin2, name: "A4 Nature’s Touch", price: "₦6,000", category: "Frames", description: "Nature-inspired A4 frame with refreshing design elements." },
+  { id: 39, image: pin2, name: "A4 Nature's Touch", price: "₦6,000", category: "Frames", description: "Nature-inspired A4 frame with refreshing design elements." },
   { id: 40, image: pin3, name: "A4 Royal Experience", price: "₦10,000", category: "Frames", description: "Premium royal-themed A4 frame for a luxurious feel." },
   { id: 41, image: pin4, name: "A4 Lonely Frame", price: "₦6,000", category: "Frames", description: "Minimalist A4 frame with a unique artistic expression." },
   { id: 42, image: pin5, name: "A4 Excitement Frame", price: "₦6,000", category: "Frames", description: "Vibrant A4 frame that brings energy to any space." },
@@ -233,9 +235,9 @@ function Latest({ cart, setCart }: LatestProps) {
           <p className="text-gray-300 mb-6">
             Our New Arrivals collection brings together the freshest fashion pieces and Pinterest-inspired frames — 
             created to help you express your style in every detail. 
-            Whether you’re updating your wardrobe or adding a personal touch to your space, 
+            Whether you're updating your wardrobe or adding a personal touch to your space, 
             each new item is carefully chosen to reflect creativity, confidence, and comfort. Explore bold colors, timeless fits, 
-            and artistic designs that tell your story. Because your style isn’t just what you wear — it’s how you live.
+            and artistic designs that tell your story. Because your style isn't just what you wear — it's how you live.
           </p>
           <Link to="/about"><button className="bg-[#00DA6B] p-2 px-5 rounded-xl text-white text-xl hover:bg-[#1d9948] transition">
             Learn More
@@ -252,7 +254,7 @@ function Latest({ cart, setCart }: LatestProps) {
 
       {/* Filter Buttons */}
       <div className="flex justify-center gap-4 mb-10 flex-wrap">
-        {["All", "Basic Tops", "Long Sleeves", "Backless Top", "Pin Down", "Frames"].map((filter) => (
+        {["All", "Basic Tops", "Long Sleeves", "Backless Top", "Pin Down", "Maxi Skirt", "Maxi Gown", "Frames"].map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
@@ -466,32 +468,3 @@ function Latest({ cart, setCart }: LatestProps) {
 }
 
 export default Latest;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
