@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+
 import home1 from "../assets/home1.jpeg";
 import home2 from "../assets/home2.jpeg";
 import home3 from "../assets/home3.jpeg";
@@ -9,17 +10,19 @@ import home4 from "../assets/home4.jpeg";
 import home5 from "../assets/home5.jpeg";
 import home6 from "../assets/home6.jpg";
 import home7 from "../assets/home7.jpg";
+
 import FeaturedProduct from "./FeaturedProduct";
 
+// =======================
+// Launch Notification Modal
+// =======================
 function LaunchNotification() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Check if notification has been dismissed before
     const hasSeenNotification = localStorage.getItem("daliWearsLaunchNotification");
-    
+
     if (!hasSeenNotification) {
-      // Show notification after a short delay
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 1000);
@@ -30,82 +33,88 @@ function LaunchNotification() {
 
   const handleClose = () => {
     setIsVisible(false);
-    // Remember that user has seen the notification
     localStorage.setItem("daliWearsLaunchNotification", "true");
   };
 
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: -100 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -100 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="fixed top-2 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-[95%] sm:w-[85%] md:w-[600px] lg:w-[650px] px-2 sm:px-0"
-        >
-          <div className="bg-gradient-to-r from-[#002A35] to-[#001D23] border-2 border-[#00DA6B] rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden relative">
-            {/* Close Button */}
-            <button
-              onClick={handleClose}
-              className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 text-gray-400 hover:text-[#00DA6B] transition-colors duration-200 z-10 bg-[#001D23] bg-opacity-50 rounded-full hover:bg-opacity-70"
-              aria-label="Close notification"
-            >
-              <X size={20} className="sm:hidden" />
-              <X size={24} className="hidden sm:block" />
-            </button>
+        <>
+          {/* Background Dim Layer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black z-40"
+            onClick={handleClose}
+          />
 
-            {/* Content */}
-            <div className="p-4 sm:p-6 md:p-8">
-              {/* Accent Bar */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00DA6B] to-[#00FFB2]"></div>
+          {/* Center Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-0"
+          >
+            <div className="bg-gradient-to-r from-[#002A35] to-[#001D23] border-2 border-[#00DA6B] max-w-md w-full rounded-2xl shadow-2xl relative overflow-hidden">
 
-              {/* Icon or Badge */}
-              <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
-                <div className="flex-shrink-0 mt-0.5 sm:mt-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-[#00DA6B] bg-opacity-20 rounded-full flex items-center justify-center">
-                    <span className="text-xl sm:text-2xl md:text-3xl">🎉</span>
-                  </div>
-                </div>
+              {/* Close button */}
+              <button
+                onClick={handleClose}
+                className="absolute top-3 right-3 p-2 text-gray-300 hover:text-white transition bg-black/30 rounded-full"
+              >
+                <X size={22} />
+              </button>
 
-                <div className="flex-1 pt-0 sm:pt-1 pr-6 sm:pr-8">
-                  {/* Heading */}
-                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-[#00DA6B] mb-1.5 sm:mb-2 leading-tight">
-                    Welcome to DALI WEARS!
-                  </h3>
+              {/* Accent top bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00DA6B] to-[#00FFB2]" />
 
-                  {/* Message */}
-                  <p className="text-gray-300 text-xs sm:text-sm md:text-base leading-relaxed mb-3 sm:mb-4">
-                    We're thrilled to announce the official launch of our website! 
-                    Your support means the world to us, and we'd be honored to have 
-                    you as part of our fashion journey.
-                  </p>
-
-                  {/* Discount Badge */}
-                  <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#00DA6B] bg-opacity-10 border border-[#00DA6B] rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 mb-2 sm:mb-3">
-                    <span className="text-base sm:text-lg">💝</span>
-                    <span className="text-[#00DA6B] font-semibold text-xs sm:text-sm md:text-base">
-                      Special Launch Discounts Available!
-                    </span>
+              {/* Content */}
+              <div className="p-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 bg-[#00DA6B]/20 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">🎉</span>
                   </div>
 
-                  {/* Footer Message */}
-                  <p className="text-gray-400 text-[10px] sm:text-xs md:text-sm italic">
-                    Thank you for being here. We love you! ❤️
-                  </p>
+                  <div className="flex-1 pr-6">
+                    <h3 className="text-xl font-bold text-[#00DA6B] mb-1 leading-tight">
+                      Welcome to DALI WEARS!
+                    </h3>
+
+                    <p className="text-gray-300 text-sm mb-3 leading-relaxed">
+                      We're thrilled to announce the official launch of our website!  
+                      Thank you for being part of our fashion journey.
+                    </p>
+
+                    <div className="inline-flex items-center gap-2 bg-[#00DA6B]/10 border border-[#00DA6B] rounded-lg px-3 py-2 mb-3">
+                      <span className="text-lg">💝</span>
+                      <span className="text-[#00DA6B] font-semibold text-sm">
+                        Special Launch Discounts Available!
+                      </span>
+                    </div>
+
+                    <p className="text-gray-400 text-xs italic">
+                      Thank you for being here. We love you! ❤️
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom Accent */}
-            <div className="h-1.5 sm:h-2 bg-gradient-to-r from-transparent via-[#00DA6B] to-transparent opacity-30"></div>
-          </div>
-        </motion.div>
+              {/* Bottom Accent */}
+              <div className="h-2 bg-gradient-to-r from-transparent via-[#00DA6B] to-transparent opacity-30" />
+            </div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
 }
 
+// =======================
+// HomePage Component
+// =======================
 function HomePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = [home1, home2, home3, home4, home5, home6, home7];
@@ -113,7 +122,7 @@ function HomePage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 3000); // Change image every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [images.length]);
@@ -121,10 +130,14 @@ function HomePage() {
   return (
     <>
       <LaunchNotification />
+
       <div className="min-h-screen bg-[#001D23] px-4 sm:px-6 md:px-8 lg:px-10 py-10">
         <div className="bg-[#002A35] px-5 sm:px-8 md:px-10 lg:px-12 py-10 sm:py-12 md:py-16 rounded-2xl shadow-2xl">
+
+          {/* Header Section */}
           <div className="flex flex-col lg:flex-row justify-between items-center gap-8 lg:gap-12">
-            {/* Left Side - Brand Name */}
+
+            {/* Brand Name Left Side */}
             <motion.div
               className="text-center lg:text-left"
               initial={{ opacity: 0, x: -50 }}
@@ -166,7 +179,7 @@ function HomePage() {
               </motion.p>
             </motion.div>
 
-            {/* Right Side - Image Carousel */}
+            {/* Image Carousel Right Side */}
             <motion.div
               className="relative w-full lg:w-1/2 h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl"
               initial={{ opacity: 0, x: 50 }}
@@ -186,7 +199,7 @@ function HomePage() {
                 />
               </AnimatePresence>
 
-              {/* Image Indicators */}
+              {/* Indicators */}
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
                 {images.map((_, index) => (
                   <button
@@ -202,8 +215,7 @@ function HomePage() {
                 ))}
               </div>
 
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </motion.div>
           </div>
 
@@ -225,7 +237,7 @@ function HomePage() {
             </Link>
           </motion.div>
 
-          {/* Stats or Features Section */}
+          {/* Stats Section */}
           <motion.div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 sm:mt-16"
             initial={{ opacity: 0, y: 30 }}
@@ -254,6 +266,7 @@ function HomePage() {
             ))}
           </motion.div>
         </div>
+
         <FeaturedProduct />
       </div>
     </>

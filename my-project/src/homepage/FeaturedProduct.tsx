@@ -36,7 +36,7 @@ const images: Product[] = [
   { src: dali1, name: "Maxi Gown & Basic Top", price: "₦8,500" },
   { src: dali2, name: "New Nature", price: "₦4,500" },
   { src: dali3, name: "Blue Basic Top", price: "₦4,500" },
-  { src: dali4, name: "Maxi Gown", price: "₦6,000" },
+  { src: dali4, name: "Maxi skirt", price: "₦5,500" },
   { src: dali5, name: "Black Basic Top", price: "₦4,500" },
   { src: dali6, name: "Maxi gown & Basic Top", price: "₦8,500" },
   { src: dali7, name: "Pink Basic Top", price: "₦4,500" },
@@ -50,7 +50,7 @@ const images: Product[] = [
   { src: dali15, name: "Blue Basic Top", price: "₦4,500" },
   { src: dali16, name: "Red Maxi Gown", price: "₦5,000" },
   { src: dali17, name: "Pink Pin-down", price: "₦5,500" },
-  { src: dali18, name: "Maxi Gown", price: "₦5,000" },
+  { src: dali18, name: "Maxi skirt", price: "₦4,500" },
   { src: dali19, name: "White Basic Top", price: "₦4,500" },
   { src: dali20, name: "Pink Basic Top", price: "₦4,500" },
 
