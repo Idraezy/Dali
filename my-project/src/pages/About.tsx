@@ -97,11 +97,11 @@ export default function About() {
                 </p>
               </div>
 
-              <div className="bg-[#002E35] p-6 rounded-xl border border-[#00DD75] border-opacity-30">
+              {/* <div className="bg-[#002E35] p-6 rounded-xl border border-[#00DD75] border-opacity-30">
                 <p className="text-gray-300 mb-3">
                   <span className="text-[#00DD75] font-semibold">Special Note:</span> Our founder's birthday is on <span className="font-bold text-[#00DD75]">November 23rd</span>. What better gift could there be than purchasing from Dali Wears? Support her vision and celebrate quality fashion this season.
                 </p>
-              </div>
+              </div> */}
 
               <p className="text-lg text-gray-300 leading-relaxed">
                 Every piece in our collection reflects her commitment to quality, style, and customer satisfaction. From basic tops to elegant maxi gowns, each item is carefully curated to ensure you look and feel your best.
