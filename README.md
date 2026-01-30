@@ -71,4 +71,4 @@ This project is licensed under the MIT License.
 📧 Contact
 For inquiries, please reach out to idraezynoks@gmail.com
 
-Made with ❤️ by Dali Wear
+Made with 💚 by Dali Wear
