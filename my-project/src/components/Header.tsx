@@ -1,21 +1,10 @@
 import { useState, useEffect } from "react";
-import { ShoppingCart, Menu, X } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { ShoppingCart, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import profileImage from "../assets/profileImage.jpg";
-
-export interface CartItem {
-  id: number;
-  product: {
-    id: number;
-    image: string;
-    name: string;
-    price: string;
-    category: string;
-    description?: string;
-  };
-  quantity: number;
-}
+import { useAuth } from "../lib/useAuth";
+import type { CartItem } from "../lib/types";
 
 interface HeaderProps {
   cart: CartItem[];
@@ -27,6 +16,14 @@ export default function Header({ cart = [] }: HeaderProps) {
   const [dotColor, setDotColor] = useState("bg-green-500");
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    setMenuOpen(false);
+    navigate("/");
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -145,6 +142,44 @@ export default function Header({ cart = [] }: HeaderProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
             >
+              {/* Admin link */}
+              {profile?.is_admin && (
+                <Link to="/admin" className="hidden sm:block">
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="cursor-pointer hover:text-[#00DA6B] transition-colors"
+                    title="Admin dashboard"
+                  >
+                    <LayoutDashboard size={22} />
+                  </motion.div>
+                </Link>
+              )}
+
+              {/* Account */}
+              <Link to={user ? "/account" : "/login"} className="hidden sm:block">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="cursor-pointer hover:text-[#00DA6B] transition-colors"
+                  title={user ? "My account" : "Log in"}
+                >
+                  <User size={22} />
+                </motion.div>
+              </Link>
+
+              {user && (
+                <motion.button
+                  onClick={handleLogout}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="hidden sm:block cursor-pointer hover:text-[#00DA6B] transition-colors"
+                  title="Log out"
+                >
+                  <LogOut size={22} />
+                </motion.button>
+              )}
+
               {/* Shopping Cart */}
               <Link to="/cart" className="relative group">
                 <motion.div
@@ -212,6 +247,39 @@ export default function Header({ cart = [] }: HeaderProps) {
                     </Link>
                   </motion.div>
                 ))}
+
+                {/* Account links (Mobile Only) */}
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: navLinks.length * 0.1, duration: 0.3 }}
+                  className="pt-2 border-t border-[#00DA6B] border-opacity-20 space-y-2"
+                >
+                  {profile?.is_admin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      className="block py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                    >
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  <Link
+                    to={user ? "/account" : "/login"}
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                  >
+                    {user ? "My Account" : "Log In"}
+                  </Link>
+                  {user && (
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                    >
+                      Log Out
+                    </button>
+                  )}
+                </motion.div>
 
                 {/* Time Display (Mobile Only) */}
                 <motion.div
