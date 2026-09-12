@@ -100,6 +100,20 @@ as $$
 $$;
 
 -- =========================================
+-- Grants: some projects don't pick up the default public-schema privileges
+-- automatically, which shows up as "permission denied for table X" even
+-- though RLS looks correct. This makes sure anon/authenticated/service_role
+-- can reach these tables at all — RLS policies below still decide which
+-- *rows* are visible.
+-- =========================================
+
+grant usage on schema public to anon, authenticated, service_role;
+grant all privileges on all tables in schema public to anon, authenticated, service_role;
+grant all privileges on all sequences in schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+
+-- =========================================
 -- Row Level Security
 -- =========================================
 
