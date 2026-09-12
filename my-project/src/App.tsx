@@ -15,6 +15,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ChatWidget from './components/ChatWidget';
 import { AuthProvider } from './lib/AuthContext';
 import { ChatProvider } from './lib/ChatContext';
+import { WishlistProvider } from './lib/WishlistContext';
 import { useCart } from './lib/useCart';
 
 const Account = lazy(() => import('./pages/Account'));
@@ -38,6 +39,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <WishlistProvider>
         <ChatProvider>
         <div>
           <ScrollToTop />
@@ -107,6 +109,7 @@ function App() {
           <ChatWidget />
         </div>
         </ChatProvider>
+        </WishlistProvider>
       </AuthProvider>
     </Router>
   );
