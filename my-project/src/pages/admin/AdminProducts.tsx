@@ -1,5 +1,5 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { ImagePlus, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import ProductImage from "../../components/ProductImage";
 import { supabase } from "../../lib/supabaseClient";
 import { useProducts } from "../../lib/useProducts";
@@ -21,8 +21,19 @@ function AdminProducts() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   const categories = useMemo(
     () => Array.from(new Set(products.map((p) => p.category))).sort(),
@@ -273,12 +284,25 @@ function AdminProducts() {
                 <label className="block text-sm font-semibold mb-1">
                   Image {editing?.image_url && "(leave blank to keep current)"}
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-gray-300"
-                />
+                <label className="flex items-center gap-3 w-full bg-[#002A35] border border-gray-700 rounded-lg px-4 py-3 cursor-pointer hover:border-[#00DA6B] transition">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                    <ProductImage
+                      src={imagePreview ?? editing?.image_url ?? null}
+                      alt="Preview"
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <span className="flex items-center gap-2 text-sm text-gray-300 truncate">
+                    <ImagePlus size={16} className="text-[#00DA6B] flex-shrink-0" />
+                    {imageFile ? imageFile.name : "Choose an image..."}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
               <label className="flex items-center gap-2 text-sm font-semibold">
