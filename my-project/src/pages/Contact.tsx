@@ -1,8 +1,11 @@
 import { useState, type ChangeEvent } from 'react';
-import { Mail, MapPin, PhoneCall, UserRound, MessageSquare, Send } from 'lucide-react';
+import { Mail, MapPin, PhoneCall, UserRound, MessageSquare, Send, MessageCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/useAuth';
+import { useStoreSettings } from '../lib/useStoreSettings';
+import { useChat } from '../lib/useChat';
 
 interface FormData {
   name: string;
@@ -11,11 +14,16 @@ interface FormData {
 }
 
 function Contact() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { settings } = useStoreSettings();
+  const { setOpen: setChatOpen, sendMessage } = useChat();
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
     message: "",
   });
+  const [sent, setSent] = useState(false);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -24,9 +32,8 @@ function Contact() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    const phoneNumber = "2349164288560";
     const { name, email, message } = formData;
 
     if (!name || !email || !message) {
@@ -34,21 +41,19 @@ function Contact() {
       return;
     }
 
-    const fullMessage = `Hello Dali Wears! 👋
+    if (!user) {
+      navigate("/login?redirect=/contact");
+      return;
+    }
 
-I'm reaching out from your website:
-
-Name: ${name}
-Email: ${email}
-Message: ${message}`;
-
-    const encodedMessage = encodeURIComponent(fullMessage);
-    const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-
-    window.open(whatsappURL, "_blank");
-    
-    // Reset form
-    setFormData({ name: "", email: "", message: "" });
+    const fullMessage = `${message}\n\n— ${name} (${email})`;
+    const ok = await sendMessage(fullMessage);
+    if (ok) {
+      setFormData({ name: "", email: "", message: "" });
+      setSent(true);
+      setChatOpen(true);
+      setTimeout(() => setSent(false), 4000);
+    }
   };
 
   const fadeInUp = {
@@ -73,10 +78,10 @@ Message: ${message}`;
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.8 }}
         >
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 bg-gradient-to-r from-[#00DA6B] to-[#00FF7F] bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-[#00DA6B] to-[#00FF7F] bg-clip-text text-transparent">
             Let's Connect
           </h1>
-          <p className="text-gray-400 text-base sm:text-lg md:text-xl max-w-3xl mx-auto">
+          <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-3xl mx-auto">
             Have questions about our fashion pieces or Pinterest frames? We'd love to hear from you! Whether it's about placing an order, requesting a custom design, or simply sharing feedback—drop us a message and we'll get back to you promptly.
           </p>
         </motion.div>
@@ -95,7 +100,7 @@ Message: ${message}`;
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
           {/* Left Side - Contact Information */}
             <div>
-              <h2 className="text-3xl font-bold mb-6 text-[#00DA6B]">
+              <h2 className="text-2xl font-bold mb-6 text-[#00DA6B]">
                 Get In Touch
               </h2>
               <p className="text-gray-400 mb-8 leading-relaxed">
@@ -118,8 +123,8 @@ Message: ${message}`;
               viewport={{ once: true }}
             >
               {[
-                { icon: Mail, label: "Email", value: "faithlawrence161@gmail.com", href: "mailto:faithlawrence161@gmail.com" },
-                { icon: PhoneCall, label: "Phone", value: "+234 (0)916 428 8560", href: "tel:+2349164288560" },
+                { icon: Mail, label: "Email", value: settings.contact_email, href: `mailto:${settings.contact_email}` },
+                { icon: PhoneCall, label: "Phone", value: settings.contact_phone, href: `tel:${settings.contact_phone.replace(/\s|\(|\)/g, "")}` },
                 { icon: MapPin, label: "Location", value: "Nigeria", href: null },
               ].map((item, index) => (
                 <motion.a
@@ -144,16 +149,57 @@ Message: ${message}`;
                 </motion.a>
               ))}
             </motion.div>
-          
+
+            <div className="flex items-center gap-4 p-6 bg-[#002A35] rounded-2xl border border-[#00DA6B] border-opacity-20 mt-6">
+              <div className="flex-shrink-0 w-12 h-12 bg-[#00DA6B] bg-opacity-20 rounded-full flex items-center justify-center">
+                <MessageCircle className="text-[#00DA6B]" size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-1">Prefer live chat?</h3>
+                <p className="text-gray-400 text-sm">
+                  {user ? (
+                    "Use the chat bubble in the bottom-right corner to message us directly."
+                  ) : (
+                    <>
+                      <Link to="/login" className="text-[#00DA6B] hover:underline">
+                        Log in
+                      </Link>{" "}
+                      to chat with us directly on the site.
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-6 bg-[#002A35] rounded-2xl border border-[#00DA6B] border-opacity-20 mt-6">
+              <div className="flex-shrink-0 w-12 h-12 bg-[#00DA6B] bg-opacity-20 rounded-full flex items-center justify-center">
+                <Clock className="text-[#00DA6B]" size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-1">Business Hours</h3>
+                <p className="text-gray-400 text-sm">Mon–Sat, 9am–6pm (WAT). We reply as fast as we can.</p>
+              </div>
+            </div>
 
           <motion.div
             {...fadeInUp}
             transition={{ delay: 0.4, duration: 0.6 }}
           >
             <div className="bg-[#002A35] p-8 sm:p-10 rounded-3xl border border-[#00DA6B] border-opacity-30 shadow-2xl">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-[#00DA6B]">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2 text-[#00DA6B]">
                 Send Us a Message
               </h2>
+              <p className="text-gray-400 text-sm mb-6">
+                {user
+                  ? "This goes straight into our live chat, so you'll see replies right in the chat bubble."
+                  : "Log in first so your message and replies are saved to your account."}
+              </p>
+
+              {sent && (
+                <div className="bg-[#00DA6B]/10 border border-[#00DA6B] text-[#00DA6B] text-sm rounded-lg px-4 py-3 mb-6">
+                  Message sent! Check the chat bubble for replies.
+                </div>
+              )}
 
               <form className="space-y-6" onSubmit={handleSend}>
                 {/* Name Input */}
@@ -229,7 +275,7 @@ Message: ${message}`;
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Send Message
+                  {user ? "Send Message" : "Log In to Send"}
                   <Send size={20} />
                 </motion.button>
               </form>

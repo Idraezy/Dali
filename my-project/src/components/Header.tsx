@@ -1,9 +1,21 @@
-import { useState, useEffect } from "react";
-import { ShoppingCart, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ShoppingCart,
+  Menu,
+  X,
+  Heart,
+  Bell,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+} from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import profileImage from "../assets/profileImage.jpg";
 import { useAuth } from "../lib/useAuth";
+import { useCategories } from "../lib/useCategories";
+import { useWishlist } from "../lib/useWishlist";
+import { useAnnouncements } from "../lib/useAnnouncements";
+import { useClickOutside } from "../lib/useClickOutside";
 import type { CartItem } from "../lib/types";
 
 interface HeaderProps {
@@ -12,16 +24,30 @@ interface HeaderProps {
 
 export default function Header({ cart = [] }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [currentTime, setCurrentTime] = useState("");
-  const [dotColor, setDotColor] = useState("bg-green-500");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const categories = useCategories();
+  const { productIds: wishlistIds } = useWishlist();
+  const { announcements, unreadCount, markSeen } = useAnnouncements();
+
+  const shopRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(shopRef, () => setShopOpen(false));
+  useClickOutside(bellRef, () => setBellOpen(false));
+  useClickOutside(avatarRef, () => setAvatarOpen(false));
 
   const handleLogout = async () => {
     await signOut();
     setMenuOpen(false);
+    setAvatarOpen(false);
     navigate("/");
   };
 
@@ -31,39 +57,16 @@ export default function Header({ cart = [] }: HeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const ampm = hours >= 12 ? "PM" : "AM";
-      const displayHours = hours % 12 || 12;
-      const formattedTime = `${displayHours}:${minutes
-        .toString()
-        .padStart(2, "0")} ${ampm}`;
-
-      setCurrentTime(formattedTime);
-
-      if (hours >= 0 && hours < 4) {
-        setDotColor("bg-red-500");
-      } else {
-        setDotColor("bg-green-500");
-      }
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   const isActiveRoute = (path: string) => location.pathname === path;
 
   const navLinks = [
-    { path: "/", label: "Home" },
-    { path: "/latest", label: "Shop" },
     { path: "/about", label: "About" },
     { path: "/contact", label: "Contact" },
+    { path: "/faq", label: "FAQ" },
   ];
+
+  const initial = user?.email?.[0]?.toUpperCase() ?? "U";
+  const showBell = Boolean(user && profile?.subscribed_to_updates);
 
   return (
     <>
@@ -72,147 +75,289 @@ export default function Header({ cart = [] }: HeaderProps) {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
         className={`fixed top-0 left-0 z-50 w-full transition-all duration-500 ${
-          isScrolled
-            ? "bg-[#001D23]/95 backdrop-blur-lg shadow-xl"
-            : "bg-[#001D23]"
+          isScrolled ? "bg-[#001D23]/95 backdrop-blur-lg shadow-xl" : "bg-[#001D23]"
         }`}
       >
         <div className="px-4 sm:px-6 lg:px-10 py-3">
-          <div className="flex items-center justify-between">
-            {/* Left: Active Status Indicator */}
-            <motion.div
-              className="flex flex-col items-center gap-1"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14">
-                <Link to='/about'>
-                <img
-                  src={profileImage}
-                  alt="Profile"
-                  className="w-full h-full rounded-full object-cover border-2 border-[#00DA6B] shadow-lg"
-                /></Link>
-                {/* Status Dot */}
-                <div
-                  className={`absolute -top-0 -right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full ${dotColor} animate-pulse border-2 border-white shadow-lg`}
-                ></div>
-              </div>
-
-              <p className="text-[10px] sm:text-xs font-semibold text-gray-300 hidden sm:block">
-                {currentTime}
-              </p>
-            </motion.div>
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: Wordmark */}
+            <Link to="/" className="flex-shrink-0">
+              <span className="text-xl sm:text-2xl font-extrabold text-[#00DA6B] tracking-tight">
+                DALI WEARS
+              </span>
+            </Link>
 
             {/* Center: Desktop Navigation */}
-            <motion.nav
-              className="hidden md:flex space-x-8 lg:space-x-10"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-            >
-              {navLinks.map((link, ) => (
+            <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
+              <Link to="/">
+                <p
+                  className={`cursor-pointer pb-1 hover:text-[#00DA6B] transition-colors text-base font-medium relative ${
+                    isActiveRoute("/") ? "text-[#00DA6B]" : "text-white"
+                  }`}
+                >
+                  Home
+                  {isActiveRoute("/") && (
+                    <motion.span
+                      className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#00DA6B]"
+                      layoutId="underline"
+                    />
+                  )}
+                </p>
+              </Link>
+
+              {/* Shop dropdown */}
+              <div className="relative" ref={shopRef}>
+                <button
+                  onClick={() => setShopOpen((v) => !v)}
+                  className={`flex items-center gap-1 cursor-pointer hover:text-[#00DA6B] transition-colors text-base font-medium ${
+                    isActiveRoute("/latest") ? "text-[#00DA6B]" : "text-white"
+                  }`}
+                >
+                  Shop
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform ${shopOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {shopOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 mt-3 w-56 bg-[#002A35] border border-[#00DA6B]/20 rounded-xl shadow-2xl overflow-hidden py-2"
+                    >
+                      <Link
+                        to="/latest"
+                        onClick={() => setShopOpen(false)}
+                        className="block px-4 py-2 text-sm text-white hover:bg-[#001D23] hover:text-[#00DA6B] transition"
+                      >
+                        All Products
+                      </Link>
+                      {categories.map((cat) => (
+                        <Link
+                          key={cat}
+                          to={`/latest?category=${encodeURIComponent(cat)}`}
+                          onClick={() => setShopOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition"
+                        >
+                          {cat}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {navLinks.map((link) => (
                 <Link key={link.path} to={link.path}>
-                  <motion.p
-                    className={`cursor-pointer pb-1 hover:text-[#00DA6B] transition-colors text-base lg:text-lg font-medium relative ${
+                  <p
+                    className={`cursor-pointer pb-1 hover:text-[#00DA6B] transition-colors text-base font-medium relative ${
                       isActiveRoute(link.path) ? "text-[#00DA6B]" : "text-white"
                     }`}
-                    whileHover={{ y: -2 }}
-                    transition={{ duration: 0.2 }}
                   >
                     {link.label}
                     {isActiveRoute(link.path) && (
                       <motion.span
                         className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#00DA6B]"
                         layoutId="underline"
-                        initial={{ width: 0 }}
-                        animate={{ width: "100%" }}
-                        transition={{ duration: 0.3 }}
                       />
                     )}
-                  </motion.p>
+                  </p>
                 </Link>
               ))}
-            </motion.nav>
+            </nav>
 
-            {/* Right: Cart & Menu */}
-            <motion.div
-              className="flex items-center gap-4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-            >
-              {/* Admin link */}
-              {profile?.is_admin && (
-                <Link to="/admin" className="hidden sm:block">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="cursor-pointer hover:text-[#00DA6B] transition-colors"
-                    title="Admin dashboard"
-                  >
-                    <LayoutDashboard size={22} />
-                  </motion.div>
+            {/* Right: Actions */}
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* Wishlist */}
+              {user && (
+                <Link to="/wishlist" className="relative hidden sm:block">
+                  <div className="cursor-pointer hover:text-[#00DA6B] transition-colors" title="Wishlist">
+                    <Heart size={22} className={wishlistIds.size > 0 ? "fill-[#00DA6B] text-[#00DA6B]" : ""} />
+                    {wishlistIds.size > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-[#00DA6B] text-[#001D23] text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                        {wishlistIds.size}
+                      </span>
+                    )}
+                  </div>
                 </Link>
               )}
 
-              {/* Account */}
-              <Link to={user ? "/account" : "/login"} className="hidden sm:block">
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="cursor-pointer hover:text-[#00DA6B] transition-colors"
-                  title={user ? "My account" : "Log in"}
-                >
-                  <User size={22} />
-                </motion.div>
-              </Link>
+              {/* Notification bell */}
+              {showBell && (
+                <div className="relative hidden sm:block" ref={bellRef}>
+                  <button
+                    onClick={() => {
+                      const next = !bellOpen;
+                      setBellOpen(next);
+                      if (next) markSeen();
+                    }}
+                    className="cursor-pointer hover:text-[#00DA6B] transition-colors"
+                    title="Notifications"
+                  >
+                    <Bell size={22} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
 
-              {user && (
-                <motion.button
-                  onClick={handleLogout}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="hidden sm:block cursor-pointer hover:text-[#00DA6B] transition-colors"
-                  title="Log out"
-                >
-                  <LogOut size={22} />
-                </motion.button>
+                  <AnimatePresence>
+                    {bellOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-3 w-72 bg-[#002A35] border border-[#00DA6B]/20 rounded-xl shadow-2xl overflow-hidden"
+                      >
+                        <div className="px-4 py-3 border-b border-gray-700 font-semibold text-sm">
+                          Updates
+                        </div>
+                        <div className="max-h-72 overflow-y-auto">
+                          {announcements.length === 0 ? (
+                            <p className="px-4 py-6 text-sm text-gray-400 text-center">
+                              No updates yet.
+                            </p>
+                          ) : (
+                            announcements.map((a) => (
+                              <div
+                                key={a.id}
+                                className="px-4 py-3 border-b border-gray-800 text-sm text-gray-300"
+                              >
+                                {a.message}
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {new Date(a.created_at).toLocaleDateString("en-NG")}
+                                </p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <Link
+                          to="/notifications"
+                          onClick={() => setBellOpen(false)}
+                          className="block px-4 py-3 text-center text-sm text-[#00DA6B] hover:bg-[#001D23] border-t border-gray-700 transition"
+                        >
+                          View all
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
 
-              {/* Shopping Cart */}
-              <Link to="/cart" className="relative group">
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="cursor-pointer hover:text-[#00DA6B] transition-colors"
+              {/* Avatar / auth */}
+              {user ? (
+                <div className="relative hidden sm:block" ref={avatarRef}>
+                  <button
+                    onClick={() => setAvatarOpen((v) => !v)}
+                    className="flex items-center gap-1 cursor-pointer"
+                  >
+                    <span className="w-9 h-9 rounded-lg bg-[#00DA6B] text-[#001D23] font-bold flex items-center justify-center">
+                      {initial}
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      className={`text-gray-400 transition-transform ${avatarOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {avatarOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-3 w-56 bg-[#002A35] border border-[#00DA6B]/20 rounded-xl shadow-2xl overflow-hidden py-2"
+                      >
+                        <div className="px-4 py-3 border-b border-gray-700">
+                          <p className="text-sm text-white truncate">{user.email}</p>
+                          {profile?.is_admin && (
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#00DA6B] text-[#001D23]">
+                              ADMIN
+                            </span>
+                          )}
+                        </div>
+                        <Link
+                          to="/account"
+                          onClick={() => setAvatarOpen(false)}
+                          className="block px-4 py-2 text-sm text-white hover:bg-[#001D23] hover:text-[#00DA6B] transition"
+                        >
+                          My Account
+                        </Link>
+                        <Link
+                          to="/wishlist"
+                          onClick={() => setAvatarOpen(false)}
+                          className="block px-4 py-2 text-sm text-white hover:bg-[#001D23] hover:text-[#00DA6B] transition"
+                        >
+                          My Wishlist
+                        </Link>
+                        {profile?.is_admin && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setAvatarOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-white hover:bg-[#001D23] hover:text-[#00DA6B] transition"
+                          >
+                            <LayoutDashboard size={16} />
+                            Admin Dashboard
+                          </Link>
+                        )}
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-[#001D23] transition text-left"
+                        >
+                          <LogOut size={16} />
+                          Sign Out
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="hidden sm:block text-sm font-semibold text-white hover:text-[#00DA6B] transition"
                 >
-                  <ShoppingCart size={24} className="sm:w-6 sm:h-6" />
+                  Log In
+                </Link>
+              )}
+
+              {/* Shop pill button */}
+              <Link to="/latest" className="hidden sm:block">
+                <button className="bg-[#00DA6B] px-5 py-2 rounded-full text-[#001D23] font-bold text-sm hover:bg-[#00FF7F] transition">
+                  Shop
+                </button>
+              </Link>
+
+              {/* Cart */}
+              <Link to="/cart" className="relative">
+                <div className="cursor-pointer hover:text-[#00DA6B] transition-colors">
+                  <ShoppingCart size={22} />
                   {cart.length > 0 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-lg"
-                    >
+                    <span className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                       {cart.length}
-                    </motion.span>
+                    </span>
                   )}
-                </motion.div>
+                </div>
               </Link>
 
               {/* Hamburger Menu (Mobile/Tablet) */}
-              <motion.button
+              <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="md:hidden p-2 hover:bg-[#002A35] rounded-lg transition-colors"
-                whileTap={{ scale: 0.9 }}
               >
                 {menuOpen ? (
-                  <X size={24} className="text-[#00DA6B]" />
+                  <X size={22} className="text-[#00DA6B]" />
                 ) : (
-                  <Menu size={24} className="text-[#00DA6B]" />
+                  <Menu size={22} className="text-[#00DA6B]" />
                 )}
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -227,71 +372,86 @@ export default function Header({ cart = [] }: HeaderProps) {
               className="md:hidden bg-[#002A35] border-t border-[#00DA6B] border-opacity-20 overflow-hidden"
             >
               <nav className="px-4 py-6 space-y-4">
-                {navLinks.map((link, index) => (
-                  <motion.div
+                <Link
+                  to="/"
+                  onClick={() => setMenuOpen(false)}
+                  className={`block py-3 px-4 rounded-lg transition-all ${
+                    isActiveRoute("/")
+                      ? "bg-[#00DA6B] text-[#001E23] font-bold"
+                      : "text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B]"
+                  }`}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/latest"
+                  onClick={() => setMenuOpen(false)}
+                  className={`block py-3 px-4 rounded-lg transition-all ${
+                    isActiveRoute("/latest")
+                      ? "bg-[#00DA6B] text-[#001E23] font-bold"
+                      : "text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B]"
+                  }`}
+                >
+                  Shop
+                </Link>
+                {navLinks.map((link) => (
+                  <Link
                     key={link.path}
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: index * 0.1, duration: 0.3 }}
+                    to={link.path}
+                    onClick={() => setMenuOpen(false)}
+                    className={`block py-3 px-4 rounded-lg transition-all ${
+                      isActiveRoute(link.path)
+                        ? "bg-[#00DA6B] text-[#001E23] font-bold"
+                        : "text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B]"
+                    }`}
                   >
-                    <Link
-                      to={link.path}
-                      onClick={() => setMenuOpen(false)}
-                      className={`block py-3 px-4 rounded-lg transition-all ${
-                        isActiveRoute(link.path)
-                          ? "bg-[#00DA6B] text-[#001E23] font-bold"
-                          : "text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B]"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  </motion.div>
+                    {link.label}
+                  </Link>
                 ))}
 
-                {/* Account links (Mobile Only) */}
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: navLinks.length * 0.1, duration: 0.3 }}
-                  className="pt-2 border-t border-[#00DA6B] border-opacity-20 space-y-2"
-                >
-                  {profile?.is_admin && (
+                <div className="pt-2 border-t border-[#00DA6B] border-opacity-20 space-y-2">
+                  {user ? (
+                    <>
+                      {profile?.is_admin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setMenuOpen(false)}
+                          className="block py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                        >
+                          Admin Dashboard
+                        </Link>
+                      )}
+                      <Link
+                        to="/wishlist"
+                        onClick={() => setMenuOpen(false)}
+                        className="block py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                      >
+                        My Wishlist
+                      </Link>
+                      <Link
+                        to="/account"
+                        onClick={() => setMenuOpen(false)}
+                        className="block py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                      >
+                        My Account
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                      >
+                        Log Out
+                      </button>
+                    </>
+                  ) : (
                     <Link
-                      to="/admin"
+                      to="/login"
                       onClick={() => setMenuOpen(false)}
                       className="block py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
                     >
-                      Admin Dashboard
+                      Log In
                     </Link>
                   )}
-                  <Link
-                    to={user ? "/account" : "/login"}
-                    onClick={() => setMenuOpen(false)}
-                    className="block py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
-                  >
-                    {user ? "My Account" : "Log In"}
-                  </Link>
-                  {user && (
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
-                    >
-                      Log Out
-                    </button>
-                  )}
-                </motion.div>
-
-                {/* Time Display (Mobile Only) */}
-                <motion.div
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.3 }}
-                  className="pt-4 border-t border-[#00DA6B] border-opacity-20"
-                >
-                  <p className="text-center text-sm text-gray-400">
-                    Current Time: <span className="text-[#00DA6B] font-semibold">{currentTime}</span>
-                  </p>
-                </motion.div>
+                </div>
               </nav>
             </motion.div>
           )}
@@ -303,7 +463,3 @@ export default function Header({ cart = [] }: HeaderProps) {
     </>
   );
 }
-
-
-
-

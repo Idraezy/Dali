@@ -145,7 +145,7 @@ function HomePage() {
               transition={{ duration: 1, ease: "easeOut" }}
             >
               <motion.div
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-extrabold text-[#00DA6B] leading-tight"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#00DA6B] leading-tight"
                 initial={{ opacity: 0, y: -30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}

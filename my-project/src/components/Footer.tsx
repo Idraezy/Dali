@@ -4,22 +4,30 @@ import {  Whatsapp } from "iconsax-react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { RiTiktokFill } from "react-icons/ri";
+import { useAuth } from "../lib/useAuth";
+import { useCategories } from "../lib/useCategories";
+import { useStoreSettings } from "../lib/useStoreSettings";
+import { supabase } from "../lib/supabaseClient";
 
 function Footer() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
+  const { user, profile, refreshProfile } = useAuth();
+  const categories = useCategories();
+  const { settings } = useStoreSettings();
   const [notification, setNotification] = useState("");
+  const [subscribing, setSubscribing] = useState(false);
 
-  const handleSubscribe = () => {
-    if (!email.trim()) {
-      setError("Email is required");
-      setNotification("");
-      return;
-    }
-    setError("");
-    setNotification("✅Thank you for your message! I'll get back to you soon.");
-    setEmail("");
-    setTimeout(() => setNotification(""), 3000); // Hide after 3s
+  const handleSubscribe = async () => {
+    if (!user) return;
+    setSubscribing(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ subscribed_to_updates: true })
+      .eq("id", user.id);
+    setSubscribing(false);
+    if (error) return;
+    await refreshProfile();
+    setNotification("✅ You're subscribed to updates!");
+    setTimeout(() => setNotification(""), 3000);
   };
 
   const fadeInUp = {
@@ -56,7 +64,7 @@ function Footer() {
                 
               </motion.a>
               <motion.a
-                href="https://wa.me/2349164288560"
+                href={`https://wa.me/${settings.whatsapp_number}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#002A35] p-2 rounded-full hover:bg-[#00DA6B] hover:text-[#001E23] transition-all duration-300"
@@ -116,11 +124,20 @@ function Footer() {
           <motion.div {...fadeInUp} transition={{ delay: 0.2 }}>
             <h4 className="text-lg font-bold mb-4 text-[#00DA6B]">Categories</h4>
             <ul className="space-y-3">
-              <li className="text-gray-400 text-sm">Basic Tops</li>
-              <li className="text-gray-400 text-sm">Pin-Down Tops</li>
-              <li className="text-gray-400 text-sm">Backless Tops</li>
-              <li className="text-gray-400 text-sm">Maxi Gowns</li>
-              <li className="text-gray-400 text-sm">Pinterest Frames</li>
+              {categories.length === 0 ? (
+                <li className="text-gray-500 text-sm">Coming soon</li>
+              ) : (
+                categories.map((cat) => (
+                  <li key={cat}>
+                    <Link
+                      to={`/latest?category=${encodeURIComponent(cat)}`}
+                      className="text-gray-400 hover:text-[#00DA6B] transition-colors text-sm"
+                    >
+                      {cat}
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
           </motion.div>
 
@@ -130,11 +147,11 @@ function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-gray-400 text-sm">
                 <Mail size={16} className="text-[#00DA6B] flex-shrink-0" />
-                <span>faithlawrence161@gmail.com</span>
+                <span>{settings.contact_email}</span>
               </li>
               <li className="flex items-center gap-2 text-gray-400 text-sm">
                 <Phone size={16} className="text-[#00DA6B] flex-shrink-0" />
-                <span>+234 (0)916 428 8560</span>
+                <span>{settings.contact_phone}</span>
               </li>
               <li className="flex items-center gap-2 text-gray-400 text-sm">
                 <MapPin size={16} className="text-[#00DA6B] flex-shrink-0" />
@@ -144,7 +161,7 @@ function Footer() {
           </motion.div>
         </div>
 
-        {/* Newsletter Section */}
+        {/* Stay Updated Section */}
         <motion.div
           className="mt-12 pt-8 border-t border-[#00DA6B] border-opacity-20"
           initial={{ opacity: 0 }}
@@ -156,30 +173,27 @@ function Footer() {
             <div className="text-center sm:text-left">
               <h4 className="text-lg font-bold mb-2 text-[#00DA6B]">Stay Updated</h4>
               <p className="text-gray-400 text-sm">
-                Subscribe to our newsletter for exclusive offers and updates
+                Get notified in-app whenever we add new products.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto relative">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="px-4 py-2 bg-[#002A35] border border-[#00DA6B] border-opacity-30 rounded-lg focus:outline-none focus:border-[#00DA6B] text-white placeholder-gray-500 w-full sm:w-64"
-              />
+            {!user ? (
+              <Link to="/login">
+                <button className="px-6 py-2 bg-[#00DA6B] text-[#001E23] font-bold rounded-lg hover:bg-[#00FF7F] transition-colors">
+                  Log In to Subscribe
+                </button>
+              </Link>
+            ) : profile?.subscribed_to_updates ? (
+              <span className="text-[#00DA6B] text-sm font-semibold">You're subscribed ✓</span>
+            ) : (
               <button
                 onClick={handleSubscribe}
-                className="px-6 py-2 bg-[#00DA6B] text-[#001E23] font-bold rounded-lg hover:bg-[#00FF7F] transition-colors"
+                disabled={subscribing}
+                className="px-6 py-2 bg-[#00DA6B] text-[#001E23] font-bold rounded-lg hover:bg-[#00FF7F] transition-colors disabled:opacity-60"
               >
-                Subscribe
+                {subscribing ? "Subscribing..." : "Subscribe"}
               </button>
-
-              {/* Error message */}
-              {error && (
-                <p className="text-red-500 text-xs mt-1 absolute -bottom-5 left-0">{error}</p>
-              )}
-            </div>
+            )}
           </div>
         </motion.div>
       </div>

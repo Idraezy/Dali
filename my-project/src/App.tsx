@@ -12,11 +12,17 @@ import Signup from './pages/Signup';
 import ScrollToTop from "./components/ScrollToTop";
 import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChatWidget from './components/ChatWidget';
 import { AuthProvider } from './lib/AuthContext';
+import { ChatProvider } from './lib/ChatContext';
 import { useCart } from './lib/useCart';
 
 const Account = lazy(() => import('./pages/Account'));
 const Admin = lazy(() => import('./pages/admin/Admin'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const Faq = lazy(() => import('./pages/Faq'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 
 function PageLoading() {
   return (
@@ -32,6 +38,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <ChatProvider>
         <div>
           <ScrollToTop />
           <Header cart={cart} />
@@ -50,8 +57,33 @@ function App() {
             <Route path="/cart" element={<Cart cart={cart} setCart={setCart} />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<Faq />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout cart={cart} setCart={setCart} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wishlist"
+              element={
+                <ProtectedRoute>
+                  <Wishlist cart={cart} setCart={setCart} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/account"
               element={
@@ -72,7 +104,9 @@ function App() {
           </Suspense>
 
           <Footer />
+          <ChatWidget />
         </div>
+        </ChatProvider>
       </AuthProvider>
     </Router>
   );

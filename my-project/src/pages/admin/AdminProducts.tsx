@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import ProductImage from "../../components/ProductImage";
 import { supabase } from "../../lib/supabaseClient";
 import { useProducts } from "../../lib/useProducts";
 import { formatNaira } from "../../lib/format";
@@ -152,14 +153,12 @@ function AdminProducts() {
               {products.map((product) => (
                 <tr key={product.id} className="border-b border-gray-800">
                   <td className="py-3 pr-4">
-                    <div className="w-12 h-12 rounded-lg bg-[#002a35] overflow-hidden">
-                      {product.image_url && (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
+                    <div className="w-12 h-12 rounded-lg overflow-hidden">
+                      <ProductImage
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-full"
+                      />
                     </div>
                   </td>
                   <td className="py-3 pr-4 font-semibold">{product.name}</td>

@@ -37,7 +37,7 @@ export default function About() {
       >
         <div className="max-w-7xl mx-auto">
           <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl font-bold mb-4 text-center"
+            className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 text-center"
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -46,7 +46,7 @@ export default function About() {
           </motion.h1>
 
           <motion.p
-            className="text-xl text-gray-400 text-center max-w-2xl mx-auto"
+            className="text-lg text-gray-400 text-center max-w-2xl mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -89,7 +89,7 @@ export default function About() {
             {/* Text */}
             <motion.div variants={fadeInUp} className="space-y-6">
               <div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-4 text-[#00DD75]">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#00DD75]">
                   Our Visionary Leader
                 </h2>
                 <p className="text-lg text-gray-300 leading-relaxed">
@@ -117,7 +117,7 @@ export default function About() {
             whileInView="whileInView"
             viewport={{ once: true, amount: 0.3 }}
           >
-            <h3 className="text-3xl md:text-4xl font-bold mb-6 text-[#00DD75]">
+            <h3 className="text-2xl md:text-3xl font-bold mb-6 text-[#00DD75]">
               Welcome to Dali Wears
             </h3>
             <p className="text-gray-300 text-lg leading-relaxed mb-4">
@@ -137,7 +137,7 @@ export default function About() {
             variants={staggerContainer}
           >
             <motion.h3
-              className="text-3xl md:text-4xl font-bold mb-12 text-center text-[#00DD75]"
+              className="text-2xl md:text-3xl font-bold mb-12 text-center text-[#00DD75]"
               variants={fadeInUp}
             >
               What We Offer
@@ -167,7 +167,7 @@ export default function About() {
             whileInView="whileInView"
             viewport={{ once: true, amount: 0.3 }}
           >
-            <h3 className="text-3xl md:text-4xl font-bold mb-12 text-center text-[#00DD75]">
+            <h3 className="text-2xl md:text-3xl font-bold mb-12 text-center text-[#00DD75]">
               Our Core Values
             </h3>
 
@@ -204,6 +204,26 @@ export default function About() {
             </div>
           </motion.div>
 
+          {/* FAQ Teaser */}
+          <motion.div
+            className="mb-20 text-center bg-[#002E35] p-8 rounded-xl border border-[#00DD75] border-opacity-20"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <h3 className="text-xl font-bold mb-2 text-[#00DD75]">Have questions?</h3>
+            <p className="text-gray-400 mb-4">
+              Check our FAQ for answers about orders, payment, and delivery.
+            </p>
+            <Link
+              to="/faq"
+              className="inline-block px-6 py-2 border-2 border-[#00DD75] text-[#00DD75] rounded-full font-bold hover:bg-[#00DD75] hover:text-[#001E23] transition-all"
+            >
+              View FAQ
+            </Link>
+          </motion.div>
+
           {/* Call to Action */}
           <motion.div
             className="bg-gradient-to-r from-[#00DD75] to-[#00AA55] p-10 md:p-16 rounded-2xl text-center space-y-6"
@@ -212,7 +232,7 @@ export default function About() {
             whileInView="whileInView"
             viewport={{ once: true, amount: 0.3 }}
           >
-            <h3 className="text-3xl md:text-4xl font-bold text-[#001E23]">
+            <h3 className="text-2xl md:text-3xl font-bold text-[#001E23]">
               Ready to Experience Dali Wears?
             </h3>
             <p className="text-lg text-[#001E23] max-w-2xl mx-auto">

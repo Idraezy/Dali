@@ -69,10 +69,17 @@ happens through `/admin` — this script doesn't need to run again.
 1. Run the site (see "Running locally" below) and sign up for an account
    through the normal `/signup` page, using the email you want as the store
    owner/admin.
-2. In Supabase, go to **Table Editor → profiles**, find the row with your
-   email, and set `is_admin` to `true`.
+2. Promote that account with:
+   ```bash
+   npm run make-admin -- you@example.com
+   ```
+   (or, without the CLI: Supabase → **Table Editor → profiles**, find the row,
+   set `is_admin` to `true`).
 3. Log out and back in (or just refresh) — you'll now see an "Admin" link in
    the header leading to `/admin`.
+
+Repeat step 2 for any other admin accounts (e.g. a co-owner) once they've
+signed up.
 
 ## Running locally
 
@@ -89,15 +96,38 @@ vercel dev
 for UI-only work, but signup/login notifications and Paystack verification
 will fail with 404s since there's no server for `/api/*` in that mode.
 
+## Wave 2 update (wishlist, chat, notifications, store settings)
+
+`supabase/schema.sql` gained new tables since the first setup: `wishlists`,
+`announcements` (feeds the header notification bell), `messages` (the
+site-wide chat widget and `/admin` → Messages), `store_settings` (WhatsApp
+number / contact email / phone, editable from `/admin` → Settings instead of
+being hardcoded), plus a few new columns on `profiles` (name, phone, address,
+subscribe-to-updates). **Re-run the full `supabase/schema.sql` in the SQL
+editor again** — it's idempotent, so this is safe even though you've run an
+earlier version before. Nothing crashes if you skip it, but wishlist/chat/
+notifications/settings will silently no-op until you do.
+
+## Wave 3 update (review photos)
+
+`reviews` gained an `image_url` column and there's a new public `review-images`
+storage bucket (any signed-in customer can upload to it). **Re-run
+`supabase/schema.sql` again** to pick this up — same as above, safe to re-run.
+
 ## What each moving part does
 
-- **Supabase Postgres** — products, orders, order items, reviews, profiles.
-  Row Level Security enforces who can read/write what (see `supabase/schema.sql`).
+- **Supabase Postgres** — products, orders, order items, reviews, profiles,
+  wishlists, messages, announcements, store settings. Row Level Security
+  enforces who can read/write what (see `supabase/schema.sql`).
 - **Supabase Auth** — signup/login. A database trigger auto-creates a
   `profiles` row for every new user.
 - **Supabase Storage** — product photos uploaded from `/admin`.
-- **`/api/notify-telegram`** — called after every successful login/signup;
-  verifies the session server-side, then messages your bot.
+- **`/api/notify-telegram`** — called after every successful login/signup and
+  every new chat message; verifies the session server-side, then messages
+  your bot.
 - **`/api/paystack-verify`** — called after a Paystack popup succeeds;
   re-verifies the payment with Paystack's servers (never trusts the client),
   then marks the order paid and notifies Telegram.
+- **Chat / notifications** — polling-based (checked every few seconds while
+  a chat panel is open, or every ~8s for unread badges), not real-time
+  websockets — simple and reliable for a support-chat volume of traffic.

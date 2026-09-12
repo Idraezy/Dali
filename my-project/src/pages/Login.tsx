@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
+import PasswordInput from "../components/PasswordInput";
 
 function Login() {
   const { signIn } = useAuth();
@@ -44,14 +45,7 @@ function Login() {
           </div>
           <div>
             <label className="block text-sm font-semibold mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#001D23] p-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00DA6B]"
-              placeholder="••••••••"
-            />
+            <PasswordInput value={password} onChange={setPassword} placeholder="••••••••" required />
           </div>
 
           {error && <p className="text-red-400 text-sm">{error}</p>}

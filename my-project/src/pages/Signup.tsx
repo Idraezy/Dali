@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
+import PasswordInput from "../components/PasswordInput";
 
 function Signup() {
   const { signUp } = useAuth();
@@ -76,14 +77,12 @@ function Signup() {
           </div>
           <div>
             <label className="block text-sm font-semibold mb-1">Password</label>
-            <input
-              type="password"
-              required
-              minLength={6}
+            <PasswordInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#001D23] p-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00DA6B]"
+              onChange={setPassword}
               placeholder="At least 6 characters"
+              minLength={6}
+              required
             />
           </div>
 

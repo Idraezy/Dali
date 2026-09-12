@@ -231,3 +231,158 @@ drop policy if exists "product_images_delete" on storage.objects;
 create policy "product_images_delete"
   on storage.objects for delete
   using (bucket_id = 'product-images' and public.is_admin());
+
+-- =========================================
+-- Wave 2: profile fields, wishlists, announcements, chat, store settings
+-- =========================================
+
+alter table public.profiles add column if not exists full_name text;
+alter table public.profiles add column if not exists phone text;
+alter table public.profiles add column if not exists address text;
+alter table public.profiles add column if not exists subscribed_to_updates boolean not null default false;
+alter table public.profiles add column if not exists notifications_last_seen_at timestamptz not null default now();
+
+-- Wishlists ---------------------------------------------------------------
+
+create table if not exists public.wishlists (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  product_id bigint not null references public.products (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (user_id, product_id)
+);
+
+create index if not exists wishlists_user_id_idx on public.wishlists (user_id);
+
+alter table public.wishlists enable row level security;
+
+drop policy if exists "wishlists_all" on public.wishlists;
+create policy "wishlists_all"
+  on public.wishlists for all
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- Announcements (feeds the header notification bell) ----------------------
+
+create table if not exists public.announcements (
+  id bigint generated always as identity primary key,
+  message text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.announcements enable row level security;
+
+drop policy if exists "announcements_select" on public.announcements;
+create policy "announcements_select"
+  on public.announcements for select
+  using (true);
+
+-- Only admins can insert directly; the trigger below (SECURITY DEFINER) is
+-- the normal path for new-product announcements.
+drop policy if exists "announcements_insert" on public.announcements;
+create policy "announcements_insert"
+  on public.announcements for insert
+  with check (public.is_admin());
+
+create or replace function public.announce_new_product()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.announcements (message)
+  values ('New product added: ' || new.name);
+  return new;
+end;
+$$;
+
+drop trigger if exists on_product_created on public.products;
+create trigger on_product_created
+  after insert on public.products
+  for each row execute function public.announce_new_product();
+
+-- Messages (client <-> admin chat) -----------------------------------------
+
+create table if not exists public.messages (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  sender text not null check (sender in ('user', 'admin')),
+  body text not null,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists messages_user_id_idx on public.messages (user_id);
+
+alter table public.messages enable row level security;
+
+drop policy if exists "messages_select" on public.messages;
+create policy "messages_select"
+  on public.messages for select
+  using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists "messages_insert" on public.messages;
+create policy "messages_insert"
+  on public.messages for insert
+  with check (
+    (sender = 'user' and user_id = auth.uid())
+    or (sender = 'admin' and public.is_admin())
+  );
+
+drop policy if exists "messages_update" on public.messages;
+create policy "messages_update"
+  on public.messages for update
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+
+-- Store settings (single row of contact details the storefront reads) -----
+
+create table if not exists public.store_settings (
+  id integer primary key default 1,
+  whatsapp_number text not null default '2349164288560',
+  contact_email text not null default 'faithlawrence161@gmail.com',
+  contact_phone text not null default '+234 (0)916 428 8560',
+  updated_at timestamptz not null default now(),
+  constraint store_settings_singleton check (id = 1)
+);
+
+insert into public.store_settings (id) values (1) on conflict (id) do nothing;
+
+alter table public.store_settings enable row level security;
+
+drop policy if exists "store_settings_select" on public.store_settings;
+create policy "store_settings_select"
+  on public.store_settings for select
+  using (true);
+
+drop policy if exists "store_settings_update" on public.store_settings;
+create policy "store_settings_update"
+  on public.store_settings for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- =========================================
+-- Wave 3: review photos
+-- =========================================
+
+alter table public.reviews add column if not exists image_url text;
+
+insert into storage.buckets (id, name, public)
+values ('review-images', 'review-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "review_images_read" on storage.objects;
+create policy "review_images_read"
+  on storage.objects for select
+  using (bucket_id = 'review-images');
+
+drop policy if exists "review_images_insert" on storage.objects;
+create policy "review_images_insert"
+  on storage.objects for insert
+  with check (bucket_id = 'review-images' and auth.role() = 'authenticated');
+
+-- Re-apply grants so the new tables are reachable too ----------------------
+
+grant all privileges on all tables in schema public to anon, authenticated, service_role;
+grant all privileges on all sequences in schema public to anon, authenticated, service_role;

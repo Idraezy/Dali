@@ -80,9 +80,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const refreshProfile = async () => {
+    if (!session) return;
+    setProfile(await fetchProfile(session.user.id));
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user: session?.user ?? null, profile, loading, signIn, signUp, signOut }}
+      value={{
+        user: session?.user ?? null,
+        profile,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
