@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { supabaseAdmin } from "./_supabaseAdmin";
-import { sendTelegramMessage } from "./_telegram";
+import { supabaseAdmin } from "./_supabaseAdmin.js";
+import { sendTelegramMessage } from "./_telegram.js";
 
 interface PaystackVerifyResponse {
   status: boolean;
