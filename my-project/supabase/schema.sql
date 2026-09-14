@@ -124,13 +124,39 @@ alter table public.order_items enable row level security;
 alter table public.reviews enable row level security;
 
 -- profiles: you can see your own row; admins can see everyone's.
--- There is deliberately no UPDATE policy for regular users — promoting an
--- account to admin is a manual step in the SQL editor / table editor, never
--- something a client request can do.
 drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select"
   on public.profiles for select
   using (id = auth.uid() or public.is_admin());
+
+-- You can update your own row (name/phone/address/subscribe toggle), and an
+-- admin can update anyone's (e.g. the Users tab's grant/revoke admin
+-- button). RLS alone can't stop a non-admin from *sneaking* is_admin into
+-- their own update payload though — the trigger below does that part.
+drop policy if exists "profiles_update" on public.profiles;
+create policy "profiles_update"
+  on public.profiles for update
+  using (id = auth.uid() or public.is_admin())
+  with check (id = auth.uid() or public.is_admin());
+
+create or replace function public.protect_profile_admin_flag()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    new.is_admin := old.is_admin;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_profile_update_protect_admin_flag on public.profiles;
+create trigger on_profile_update_protect_admin_flag
+  before update on public.profiles
+  for each row execute function public.protect_profile_admin_flag();
 
 -- products: readable by anyone (including logged-out visitors); only admins
 -- can create/edit/delete.
@@ -383,6 +409,77 @@ create policy "review_images_insert"
   with check (bucket_id = 'review-images' and auth.role() = 'authenticated');
 
 -- Re-apply grants so the new tables are reachable too ----------------------
+
+grant all privileges on all tables in schema public to anon, authenticated, service_role;
+grant all privileges on all sequences in schema public to anon, authenticated, service_role;
+
+-- =========================================
+-- Wave 4: profile avatars + partnership/sponsorship applications
+-- (added for the mobile app's Account screen)
+-- =========================================
+
+alter table public.profiles add column if not exists avatar_url text;
+
+-- Avatars storage: public read, each user can only write to a path that
+-- starts with their own user id (e.g. "<uid>.jpg"), so no one can overwrite
+-- someone else's picture.
+
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "avatars_read" on storage.objects;
+create policy "avatars_read"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists "avatars_insert" on storage.objects;
+create policy "avatars_insert"
+  on storage.objects for insert
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] is null and name like auth.uid()::text || '%');
+
+drop policy if exists "avatars_update" on storage.objects;
+create policy "avatars_update"
+  on storage.objects for update
+  using (bucket_id = 'avatars' and name like auth.uid()::text || '%');
+
+drop policy if exists "avatars_delete" on storage.objects;
+create policy "avatars_delete"
+  on storage.objects for delete
+  using (bucket_id = 'avatars' and name like auth.uid()::text || '%');
+
+-- Partnership / sponsorship applications ------------------------------------
+
+create table if not exists public.partnership_applications (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  full_name text not null,
+  phone text not null,
+  kind text not null default 'partnership' check (kind in ('partnership', 'sponsorship')),
+  message text,
+  status text not null default 'pending' check (status in ('pending', 'reviewed', 'approved', 'rejected')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists partnership_applications_user_id_idx on public.partnership_applications (user_id);
+
+alter table public.partnership_applications enable row level security;
+
+drop policy if exists "partnership_applications_select" on public.partnership_applications;
+create policy "partnership_applications_select"
+  on public.partnership_applications for select
+  using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists "partnership_applications_insert" on public.partnership_applications;
+create policy "partnership_applications_insert"
+  on public.partnership_applications for insert
+  with check (user_id = auth.uid());
+
+drop policy if exists "partnership_applications_update" on public.partnership_applications;
+create policy "partnership_applications_update"
+  on public.partnership_applications for update
+  using (public.is_admin())
+  with check (public.is_admin());
 
 grant all privileges on all tables in schema public to anon, authenticated, service_role;
 grant all privileges on all sequences in schema public to anon, authenticated, service_role;

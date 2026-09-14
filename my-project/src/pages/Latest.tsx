@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, X, Star, ShoppingCart, CircleCheckBig, Loader2, Heart, MessageCircle, Camera } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import dali5 from "../assets/dali5.jpeg";
 import ProductImage from "../components/ProductImage";
 import { useProducts } from "../lib/useProducts";
 import { useAuth } from "../lib/useAuth";
@@ -205,26 +204,17 @@ function Latest({ cart, setCart }: LatestProps) {
       </div>
 
       {/* Hero Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-center mt-5 bg-[#001D23] p-8 rounded-xl gap-8 mb-10">
-        <div className="w-full lg:w-1/2">
-          <p className="text-3xl lg:text-4xl font-bold mb-4">New Arrivals</p>
-          <p className="text-gray-300 text-sm mb-6">
-            Our New Arrivals collection brings together the freshest fashion pieces and
-            Pinterest-inspired frames — created to help you express your style in every detail.
-          </p>
-          <Link to="/about">
-            <button className="bg-[#00DA6B] px-5 py-2 rounded-xl text-white hover:bg-[#1d9948] transition">
-              Learn More
-            </button>
-          </Link>
-        </div>
-        <div className="w-full lg:w-1/2">
-          <img
-            src={dali5}
-            alt="New Arrival"
-            className="w-full h-60 object-cover rounded-xl hover:scale-105 transition-transform duration-300"
-          />
-        </div>
+      <div className="mt-5 bg-[#001D23] p-8 rounded-xl mb-10">
+        <p className="text-3xl lg:text-4xl font-bold mb-4">New Arrivals</p>
+        <p className="text-gray-300 text-sm mb-6 max-w-2xl">
+          Our New Arrivals collection brings together the freshest fashion pieces and
+          Pinterest-inspired frames — created to help you express your style in every detail.
+        </p>
+        <Link to="/about">
+          <button className="bg-[#00DA6B] px-5 py-2 rounded-xl text-white hover:bg-[#1d9948] transition">
+            Learn More
+          </button>
+        </Link>
       </div>
 
       {/* Filter Buttons */}

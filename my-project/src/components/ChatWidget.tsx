@@ -8,6 +8,7 @@ export default function ChatWidget() {
   const { open, setOpen, messages, unreadFromAdmin, sendMessage } = useChat();
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [showLabel, setShowLabel] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -15,6 +16,11 @@ export default function ChatWidget() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, open]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowLabel(false), 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!user) return null;
 
@@ -79,7 +85,7 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {!open && (
+      {!open && showLabel && (
         <button
           onClick={() => setOpen(true)}
           className="mb-3 bg-[#001D23] border border-[#00DA6B]/30 text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg hover:border-[#00DA6B] transition"
