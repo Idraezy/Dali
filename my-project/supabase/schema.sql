@@ -146,6 +146,13 @@ security definer
 set search_path = public
 as $$
 begin
+  -- The service role (used by trusted server-side scripts/admin tooling)
+  -- bypasses RLS entirely but still fires triggers, and has no auth.uid(),
+  -- so is_admin() would always read as false for it — exempt it explicitly
+  -- rather than silently reverting legitimate service-role admin grants.
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
   if not public.is_admin() then
     new.is_admin := old.is_admin;
   end if;
