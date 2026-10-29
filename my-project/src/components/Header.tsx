@@ -81,10 +81,8 @@ export default function Header({ cart = [] }: HeaderProps) {
         <div className="px-4 sm:px-6 lg:px-10 py-3">
           <div className="flex items-center justify-between gap-4">
             {/* Left: Wordmark */}
-            <Link to="/" className="flex-shrink-0">
-              <span className="text-xl sm:text-2xl font-extrabold text-[#00DA6B] tracking-tight">
-                DALI WEARS
-              </span>
+            <Link to="/" className="flex-shrink-0" aria-label="Dali Wears home">
+              <img src="/logo-wordmark.png" alt="Dali Wears" className="h-11 sm:h-12 w-auto" />
             </Link>
 
             {/* Center: Desktop Navigation */}
@@ -172,6 +170,17 @@ export default function Header({ cart = [] }: HeaderProps) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3 sm:gap-4">
+              {/* Get App is hidden until the app is released. To bring it back, uncomment
+                  this and the mobile-menu link below, and re-import Smartphone from lucide-react.
+              <Link
+                to="/app"
+                className="hidden sm:flex items-center gap-1.5 bg-[#001D23] border border-gray-700 hover:border-[#00DA6B] rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+              >
+                <Smartphone size={14} />
+                Get App
+              </Link>
+              */}
+
               {/* Wishlist */}
               {user && (
                 <Link to="/wishlist" className="relative hidden sm:block">
@@ -408,6 +417,15 @@ export default function Header({ cart = [] }: HeaderProps) {
                     {link.label}
                   </Link>
                 ))}
+                {/* Hidden until the app is released (see the Get App note above).
+                <Link
+                  to="/app"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-3 px-4 rounded-lg text-gray-300 hover:bg-[#001D23] hover:text-[#00DA6B] transition-all"
+                >
+                  <Smartphone size={16} /> Get the App
+                </Link>
+                */}
 
                 <div className="pt-2 border-t border-[#00DA6B] border-opacity-20 space-y-2">
                   {user ? (

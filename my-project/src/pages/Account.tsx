@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, Truck } from "lucide-react";
 import { useAuth } from "../lib/useAuth";
 import { supabase } from "../lib/supabaseClient";
 import { formatNaira } from "../lib/format";
+import { DELIVERY_LABELS } from "../lib/tracking";
 import type { Order, OrderItem, OrderStatus } from "../lib/types";
 
 interface OrderWithItems extends Order {
@@ -211,7 +212,8 @@ function OrdersTab() {
             {order.items.map((item) => (
               <div key={item.id} className="flex justify-between text-sm text-gray-300">
                 <span>
-                  {item.product_name} x{item.quantity}
+                  {item.product_name}
+                  {item.size && ` (Size ${item.size})`} x{item.quantity}
                 </span>
                 <span>{formatNaira(item.product_price * item.quantity)}</span>
               </div>
@@ -222,6 +224,21 @@ function OrdersTab() {
             <span>Total</span>
             <span className="text-[#00DA6B]">{formatNaira(order.total)}</span>
           </div>
+
+          {order.status === "paid" && (
+            <div className="flex items-center justify-between gap-3 mt-4">
+              <span className="flex items-center gap-2 text-sm text-gray-400">
+                <Truck size={16} />
+                {DELIVERY_LABELS[order.delivery_status]}
+              </span>
+              <Link
+                to={`/orders/${order.id}`}
+                className="border border-[#00DA6B] text-[#00DA6B] text-sm font-bold px-4 py-1.5 rounded-full hover:bg-[#00DA6B]/10 transition"
+              >
+                Track order
+              </Link>
+            </div>
+          )}
         </div>
       ))}
     </div>

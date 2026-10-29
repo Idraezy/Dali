@@ -12,20 +12,23 @@ import {
   Menu,
   X,
   Bell,
+  Truck,
 } from "lucide-react";
 import { useAuth } from "../../lib/useAuth";
 import { useUnreadAdminMessages } from "../../lib/useUnreadAdminMessages";
 import AdminDashboard from "./AdminDashboard";
+import AdminOrders from "./AdminOrders";
 import AdminProducts from "./AdminProducts";
 import AdminMessages from "./AdminMessages";
 import AdminUsers from "./AdminUsers";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminSettings from "./AdminSettings";
 
-export type AdminTab = "dashboard" | "products" | "messages" | "users" | "analytics" | "settings";
+export type AdminTab = "dashboard" | "orders" | "products" | "messages" | "users" | "analytics" | "settings";
 
 const NAV: Array<{ id: AdminTab; label: string; icon: typeof LayoutDashboard }> = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "orders", label: "Orders", icon: Truck },
   { id: "products", label: "Products", icon: Package },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
@@ -35,6 +38,7 @@ const NAV: Array<{ id: AdminTab; label: string; icon: typeof LayoutDashboard }> 
 
 const TITLES: Record<AdminTab, string> = {
   dashboard: "Dashboard",
+  orders: "Orders",
   products: "Products",
   messages: "Messages",
   users: "Users",
@@ -56,7 +60,7 @@ function Admin() {
   const sidebarContent = (
     <>
       <div className="px-6 py-6 border-b border-gray-800">
-        <p className="text-xl font-extrabold text-[#00DA6B]">DALI WEARS</p>
+        <img src="/logo-wordmark.png" alt="Dali Wears" className="h-12 w-auto" />
         <p className="text-xs text-gray-500">Admin Panel</p>
       </div>
 
@@ -160,6 +164,7 @@ function Admin() {
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {tab === "dashboard" && <AdminDashboard onNavigate={selectTab} />}
+          {tab === "orders" && <AdminOrders />}
           {tab === "products" && <AdminProducts />}
           {tab === "messages" && <AdminMessages />}
           {tab === "users" && <AdminUsers />}

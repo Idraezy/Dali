@@ -3,6 +3,7 @@ import { Trash2, Plus, Minus } from "lucide-react";
 import ProductImage from "../components/ProductImage";
 import { useAuth } from "../lib/useAuth";
 import { formatNaira } from "../lib/format";
+import { salePrice } from "../lib/pricing";
 import type { CartItem } from "../lib/types";
 
 export type { CartItem };
@@ -17,20 +18,26 @@ function Cart({ cart, setCart }: CartProps) {
   const navigate = useNavigate();
 
   const total = (cart || []).reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
+    (sum, item) => sum + salePrice(item.product) * item.quantity,
     0
   );
 
-  const handleUpdateQuantity = (id: number, quantity: number) => {
+  const handleUpdateQuantity = (key: string, quantity: number) => {
     if (quantity < 1) {
-      handleRemoveItem(id);
+      handleRemoveItem(key);
       return;
     }
-    setCart(cart.map((item) => (item.id === id ? { ...item, quantity } : item)));
+    setCart(
+      cart.map((item) =>
+        item.key === key
+          ? { ...item, quantity: item.product.stock > 0 ? Math.min(quantity, item.product.stock) : quantity }
+          : item
+      )
+    );
   };
 
-  const handleRemoveItem = (id: number) => {
-    setCart(cart.filter((item) => item.id !== id));
+  const handleRemoveItem = (key: string) => {
+    setCart(cart.filter((item) => item.key !== key));
   };
 
   const handleClearCart = () => {
@@ -60,7 +67,7 @@ function Cart({ cart, setCart }: CartProps) {
           <div className="lg:col-span-2 space-y-4">
             {cart.map((item) => (
               <div
-                key={item.id}
+                key={item.key}
                 className="bg-[#001D23] rounded-xl p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4"
               >
                 <ProductImage
@@ -72,22 +79,24 @@ function Cart({ cart, setCart }: CartProps) {
                 <div className="flex-1">
                   <h3 className="text-lg font-bold mb-2">{item.product.name}</h3>
                   <p className="text-[#00DA6B] font-bold mb-2">
-                    {formatNaira(item.product.price)}
+                    {formatNaira(salePrice(item.product))}
                   </p>
-                  <p className="text-gray-400 text-sm">Category: {item.product.category}</p>
+                  <p className="text-gray-400 text-sm">
+                    {item.size && <>Size: {item.size} · </>}Category: {item.product.category}
+                  </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                   <div className="flex items-center gap-2 bg-[#002a35] p-2 rounded-lg">
                     <button
-                      onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => handleUpdateQuantity(item.key, item.quantity - 1)}
                       className="p-2 hover:bg-[#003a45] rounded transition"
                     >
                       <Minus size={18} />
                     </button>
                     <span className="px-4 font-bold">{item.quantity}</span>
                     <button
-                      onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => handleUpdateQuantity(item.key, item.quantity + 1)}
                       className="p-2 hover:bg-[#003a45] rounded transition"
                     >
                       <Plus size={18} />
@@ -95,7 +104,7 @@ function Cart({ cart, setCart }: CartProps) {
                   </div>
 
                   <button
-                    onClick={() => handleRemoveItem(item.id)}
+                    onClick={() => handleRemoveItem(item.key)}
                     className="p-2 hover:bg-red-500 hover:bg-opacity-20 rounded transition text-red-500"
                   >
                     <Trash2 size={20} />
@@ -105,7 +114,7 @@ function Cart({ cart, setCart }: CartProps) {
                 <div className="text-right w-full sm:w-auto">
                   <p className="text-gray-400 text-sm">Subtotal:</p>
                   <p className="text-lg font-bold text-[#00DA6B]">
-                    {formatNaira(item.product.price * item.quantity)}
+                    {formatNaira(salePrice(item.product) * item.quantity)}
                   </p>
                 </div>
               </div>

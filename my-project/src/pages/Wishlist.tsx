@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Heart, ShoppingCart, Loader2, Trash2 } from "lucide-react";
 import ProductImage from "../components/ProductImage";
 import { supabase } from "../lib/supabaseClient";
 import { useWishlist } from "../lib/useWishlist";
-import { formatNaira } from "../lib/format";
+import PriceTag from "../components/PriceTag";
+import { addItem, productSizes, stockLabel } from "../lib/pricing";
 import type { CartItem, Product } from "../lib/types";
 
 interface WishlistProps {
@@ -16,6 +17,7 @@ function Wishlist({ cart, setCart }: WishlistProps) {
   const { productIds, loading: idsLoading, toggle } = useWishlist();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (idsLoading) return;
@@ -36,16 +38,12 @@ function Wishlist({ cart, setCart }: WishlistProps) {
   }, [productIds, idsLoading]);
 
   const handleAddToCart = (product: Product) => {
-    const existing = cart.find((item) => item.id === product.id);
-    if (existing) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      );
-    } else {
-      setCart([...cart, { id: product.id, product, quantity: 1 }]);
+    // Sized items need a size picked on the product page first.
+    if (productSizes(product).length > 0) {
+      navigate(`/latest?product=${product.id}`);
+      return;
     }
+    setCart(addItem(cart, product));
   };
 
   return (
@@ -95,13 +93,15 @@ function Wishlist({ cart, setCart }: WishlistProps) {
 
             <div className="p-4">
               <h3 className="text-lg font-bold mb-1">{product.name}</h3>
-              <p className="text-[#00DA6B] font-bold mb-3">{formatNaira(product.price)}</p>
+              <PriceTag product={product} className="font-bold mb-1" />
+              <p className="text-gray-400 text-xs mb-3 h-4">{stockLabel(product)}</p>
               <button
                 onClick={() => handleAddToCart(product)}
-                className="w-full bg-[#00DA6B] text-black font-bold py-2 rounded-lg hover:bg-[#1d9948] transition flex items-center justify-center gap-2"
+                disabled={product.stock <= 0}
+                className="w-full bg-[#00DA6B] text-black font-bold py-2 rounded-lg hover:bg-[#1d9948] transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingCart size={16} />
-                Add to Cart
+                {product.stock <= 0 ? "Out of stock" : productSizes(product).length > 0 ? "Choose size" : "Add to Cart"}
               </button>
             </div>
           </div>

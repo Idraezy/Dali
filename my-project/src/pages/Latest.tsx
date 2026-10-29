@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, X, Star, ShoppingCart, CircleCheckBig, Loader2, Heart, MessageCircle, Camera } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import ProductImage from "../components/ProductImage";
+import PriceTag from "../components/PriceTag";
+import MediaGallery from "../components/MediaGallery";
 import { useProducts } from "../lib/useProducts";
 import { useAuth } from "../lib/useAuth";
 import { useWishlist } from "../lib/useWishlist";
 import { useChat } from "../lib/useChat";
 import { supabase } from "../lib/supabaseClient";
-import { formatNaira } from "../lib/format";
+import { addItem, hasActiveDiscount, productImages, productSizes, stockLabel } from "../lib/pricing";
 import type { CartItem, Product, Review } from "../lib/types";
 
 interface LatestProps {
@@ -26,6 +28,8 @@ function Latest({ cart, setCart }: LatestProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState(searchParams.get("category") || "All");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [sizeMissing, setSizeMissing] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
@@ -53,6 +57,32 @@ function Latest({ cart, setCart }: LatestProps) {
     }
   };
 
+  const openProduct = (product: Product) => {
+    const sizes = productSizes(product);
+    setSelectedSize(sizes.length === 1 ? sizes[0] : null);
+    setSizeMissing(false);
+    setSelectedProduct(product);
+  };
+
+  const closeProduct = () => {
+    setSelectedProduct(null);
+    if (searchParams.has("product")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("product");
+      setSearchParams(next, { replace: true });
+    }
+  };
+
+  // /latest?product=ID (from the homepage or wishlist) opens that product.
+  const linkedProductId = Number(searchParams.get("product"));
+  useEffect(() => {
+    if (!linkedProductId || selectedProduct) return;
+    const linked = products.find((p) => p.id === linkedProductId);
+    if (linked) openProduct(linked);
+    // openProduct only sets state; re-running for it would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedProductId, products]);
+
   useEffect(() => {
     if (!selectedProduct) return;
     let active = true;
@@ -72,20 +102,29 @@ function Latest({ cart, setCart }: LatestProps) {
     };
   }, [selectedProduct]);
 
-  const handleAddToCart = (product: Product) => {
-    const existingItem = cart.find((item) => item.id === product.id);
-    if (existingItem) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      );
-    } else {
-      setCart([...cart, { id: product.id, product, quantity: 1 }]);
-    }
-
-    setNotification(product.name);
+  const handleAddToCart = (product: Product, size: string | null = null) => {
+    setCart(addItem(cart, product, 1, size));
+    setNotification(size ? `${product.name} (${size})` : product.name);
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  // Card "Add": sized items open the details so a size can be picked.
+  const handleQuickAdd = (product: Product) => {
+    if (productSizes(product).length > 0) {
+      openProduct(product);
+      return;
+    }
+    handleAddToCart(product);
+  };
+
+  const handleModalAdd = () => {
+    if (!selectedProduct) return;
+    if (productSizes(selectedProduct).length > 0 && !selectedSize) {
+      setSizeMissing(true);
+      return;
+    }
+    handleAddToCart(selectedProduct, selectedSize);
+    closeProduct();
   };
 
   const handleReviewSubmit = async () => {
@@ -267,8 +306,22 @@ function Latest({ cart, setCart }: LatestProps) {
                 <ProductImage
                   src={product.image_url}
                   alt={product.name}
-                  className="w-full h-full group-hover:scale-110 transition-transform duration-300"
+                  className={`w-full h-full group-hover:scale-110 transition-transform duration-300 ${
+                    product.stock <= 0 ? "opacity-60 grayscale" : ""
+                  }`}
                 />
+                <div className="absolute top-3 left-3 flex flex-col items-start gap-1">
+                  {hasActiveDiscount(product) && product.stock > 0 && (
+                    <span className="bg-[#FF6B6B] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      -{product.discount_percent}%
+                    </span>
+                  )}
+                  {stockLabel(product) && (
+                    <span className="bg-black/70 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                      {stockLabel(product)}
+                    </span>
+                  )}
+                </div>
                 {user && (
                   <button
                     onClick={() => toggleWishlist(product.id)}
@@ -286,19 +339,20 @@ function Latest({ cart, setCart }: LatestProps) {
 
               <div className="p-4">
                 <h3 className="text-lg font-bold mb-2">{product.name}</h3>
-                <p className="text-[#00DA6B] font-bold mb-1">{formatNaira(product.price)}</p>
+                <PriceTag product={product} className="font-bold mb-1" />
                 <p className="text-gray-400 text-sm mb-4">Category: {product.category}</p>
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => handleAddToCart(product)}
-                    className="flex-1 bg-[#00DA6B] text-black font-bold py-2 rounded-lg hover:bg-[#1d9948] transition flex items-center justify-center gap-2 text-sm"
+                    onClick={() => handleQuickAdd(product)}
+                    disabled={product.stock <= 0}
+                    className="flex-1 bg-[#00DA6B] text-black font-bold py-2 rounded-lg hover:bg-[#1d9948] transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart size={16} />
-                    Add
+                    {product.stock <= 0 ? "Sold out" : "Add"}
                   </button>
                   <button
-                    onClick={() => setSelectedProduct(product)}
+                    onClick={() => openProduct(product)}
                     className="flex-1 bg-[#001a1f] text-white font-bold py-2 rounded-lg hover:bg-[#002a35] transition border border-gray-600 text-sm"
                   >
                     Details
@@ -315,18 +369,19 @@ function Latest({ cart, setCart }: LatestProps) {
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#001D23] rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto my-4 relative">
             <button
-              onClick={() => setSelectedProduct(null)}
+              onClick={closeProduct}
               className="absolute top-4 right-4 p-2 hover:bg-[#002a35] rounded-full z-10"
             >
               <X size={22} className="text-white" />
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-8">
-              <div className="flex items-center justify-center">
-                <ProductImage
-                  src={selectedProduct.image_url}
-                  alt={selectedProduct.name}
-                  className="w-full h-64 md:h-80 rounded-xl"
+              <div>
+                <MediaGallery
+                  key={selectedProduct.id}
+                  name={selectedProduct.name}
+                  images={productImages(selectedProduct)}
+                  videos={selectedProduct.videos ?? []}
                 />
               </div>
 
@@ -367,9 +422,48 @@ function Latest({ cart, setCart }: LatestProps) {
                   <span className="text-gray-400 text-sm">({reviews.length} reviews)</span>
                 </div>
 
-                <p className="text-xl md:text-2xl font-bold text-green-500 mb-4">
-                  {formatNaira(selectedProduct.price)}
-                </p>
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                  <PriceTag product={selectedProduct} className="text-xl md:text-2xl font-bold" />
+                  {hasActiveDiscount(selectedProduct) && (
+                    <span className="bg-[#FF6B6B] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {selectedProduct.discount_percent}% off
+                    </span>
+                  )}
+                  {stockLabel(selectedProduct) && (
+                    <span className="text-gray-300 text-xs font-semibold border border-gray-600 px-2 py-0.5 rounded-full">
+                      {stockLabel(selectedProduct)}
+                    </span>
+                  )}
+                </div>
+
+                {productSizes(selectedProduct).length > 0 && (
+                  <div className="mb-4">
+                    <p className={`text-sm font-semibold mb-2 ${sizeMissing ? "text-red-400" : ""}`}>
+                      {sizeMissing ? "Please choose a size" : "Size"}
+                      {selectedSize && <span className="text-gray-400 font-normal"> · {selectedSize}</span>}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {productSizes(selectedProduct).map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSize(size);
+                            setSizeMissing(false);
+                          }}
+                          aria-pressed={selectedSize === size}
+                          className={`min-w-11 px-3 py-2 rounded-lg text-sm font-semibold border transition ${
+                            selectedSize === size
+                              ? "bg-[#00DA6B] text-black border-[#00DA6B]"
+                              : "border-gray-600 text-white hover:border-[#00DA6B]"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-[#002a35] rounded-xl p-4 mb-4">
                   <h3 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">
@@ -391,7 +485,7 @@ function Latest({ cart, setCart }: LatestProps) {
                     Chat with us
                   </button>
                   <button
-                    onClick={() => setSelectedProduct(null)}
+                    onClick={closeProduct}
                     className="flex-1 bg-[#002a35] text-white font-bold py-2 md:py-3 rounded-lg hover:bg-[#003a45] transition border border-gray-600 text-sm"
                   >
                     Back to Shop
@@ -399,13 +493,11 @@ function Latest({ cart, setCart }: LatestProps) {
                 </div>
 
                 <button
-                  onClick={() => {
-                    handleAddToCart(selectedProduct);
-                    setSelectedProduct(null);
-                  }}
-                  className="w-full bg-green-500 text-white font-bold py-2 md:py-3 rounded-lg hover:bg-green-600 transition text-sm"
+                  onClick={handleModalAdd}
+                  disabled={selectedProduct.stock <= 0}
+                  className="w-full bg-green-500 text-white font-bold py-2 md:py-3 rounded-lg hover:bg-green-600 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add to Cart
+                  {selectedProduct.stock <= 0 ? "Out of stock" : "Add to Cart"}
                 </button>
               </div>
             </div>

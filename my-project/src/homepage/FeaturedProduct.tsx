@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShoppingBag, Loader2 } from "lucide-react";
 import ProductImage from "../components/ProductImage";
+import PriceTag from "../components/PriceTag";
 import { useProducts } from "../lib/useProducts";
-import { formatNaira } from "../lib/format";
 
 function FeaturedProduct() {
   const { products, loading } = useProducts();
@@ -42,7 +42,7 @@ function FeaturedProduct() {
           {featured.map((item) => (
             <Link
               key={item.id}
-              to="/latest"
+              to={`/latest?product=${item.id}`}
               className="group bg-[#001A20] rounded-2xl overflow-hidden border border-[#00DA6B]/20 hover:border-[#00DA6B] transition-all duration-300"
             >
               <div className="relative h-40 sm:h-48 overflow-hidden bg-[#002A35]">
@@ -56,7 +56,7 @@ function FeaturedProduct() {
                 <h3 className="font-semibold text-sm mb-1 truncate group-hover:text-[#00DA6B] transition-colors">
                   {item.name}
                 </h3>
-                <p className="font-bold text-sm text-[#00DA6B]">{formatNaira(item.price)}</p>
+                <PriceTag product={item} className="font-bold text-sm" />
               </div>
             </Link>
           ))}

@@ -24,6 +24,10 @@ const Wishlist = lazy(() => import('./pages/Wishlist'));
 const Faq = lazy(() => import('./pages/Faq'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Notifications = lazy(() => import('./pages/Notifications'));
+const Shipping = lazy(() => import('./pages/Shipping'));
+const Returns = lazy(() => import('./pages/Returns'));
+const GetApp = lazy(() => import('./pages/GetApp'));
+const TrackOrder = lazy(() => import('./pages/TrackOrder'));
 
 function PageLoading() {
   return (
@@ -60,6 +64,17 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<Faq />} />
+            <Route path="/shipping" element={<Shipping />} />
+            <Route path="/returns" element={<Returns />} />
+            <Route path="/app" element={<GetApp />} />
+            <Route
+              path="/orders/:id"
+              element={
+                <ProtectedRoute>
+                  <TrackOrder />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route

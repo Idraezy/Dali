@@ -5,8 +5,10 @@ import type { StoreSettings } from "./types";
 const FALLBACK: StoreSettings = {
   id: 1,
   whatsapp_number: "2349164288560",
-  contact_email: "faithlawrence161@gmail.com",
+  contact_email: "daliwears@gmail.com",
   contact_phone: "+234 (0)916 428 8560",
+  android_app_url: null,
+  ios_app_url: null,
   updated_at: "",
 };
 

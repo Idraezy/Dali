@@ -44,7 +44,7 @@ function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand Section */}
           <motion.div {...fadeInUp} className="space-y-4">
-            <h3 className="text-3xl font-bold text-[#00DA6B]">DALI WEARS</h3>
+            <img src="/logo-wordmark.png" alt="Dali Wears" className="h-20 w-auto" />
             <p className="text-gray-400 text-sm leading-relaxed">
               Crafting style and creating experiences. Your destination for quality fashion and timeless elegance.
             </p>
@@ -115,6 +115,21 @@ function Footer() {
               <li>
                 <Link to="/cart" className="text-gray-400 hover:text-[#00DA6B] transition-colors text-sm">
                   Cart
+                </Link>
+              </li>
+              <li>
+                <Link to="/faq" className="text-gray-400 hover:text-[#00DA6B] transition-colors text-sm">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/shipping" className="text-gray-400 hover:text-[#00DA6B] transition-colors text-sm">
+                  Shipping & Delivery
+                </Link>
+              </li>
+              <li>
+                <Link to="/returns" className="text-gray-400 hover:text-[#00DA6B] transition-colors text-sm">
+                  Returns & Refunds
                 </Link>
               </li>
             </ul>

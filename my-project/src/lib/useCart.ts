@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { addItem, normalizeCart } from "./pricing";
 import type { CartItem, Product } from "./types";
 
 const STORAGE_KEY = "daliWearsCart";
@@ -6,7 +7,7 @@ const STORAGE_KEY = "daliWearsCart";
 function loadCart(): CartItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as CartItem[]) : [];
+    return raw ? normalizeCart(JSON.parse(raw) as CartItem[]) : [];
   } catch {
     return [];
   }
@@ -23,16 +24,8 @@ export function useCart() {
     }
   }, [cart]);
 
-  const addToCart = useCallback((product: Product, quantity = 1) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
-        );
-      }
-      return [...prev, { id: product.id, product, quantity }];
-    });
+  const addToCart = useCallback((product: Product, quantity = 1, size: string | null = null) => {
+    setCart((prev) => addItem(prev, product, quantity, size));
   }, []);
 
   return { cart, setCart, addToCart };

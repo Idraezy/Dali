@@ -5,6 +5,7 @@ import { useAuth } from "../lib/useAuth";
 import { supabase } from "../lib/supabaseClient";
 import { openPaystackCheckout } from "../lib/paystack";
 import { formatNaira } from "../lib/format";
+import { salePrice } from "../lib/pricing";
 import { useChat } from "../lib/useChat";
 import type { CartItem } from "../lib/types";
 
@@ -21,7 +22,7 @@ function Checkout({ cart, setCart }: CheckoutProps) {
   const [payError, setPayError] = useState<string | null>(null);
   const [messaging, setMessaging] = useState(false);
 
-  const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const total = cart.reduce((sum, item) => sum + salePrice(item.product) * item.quantity, 0);
 
   if (cart.length === 0) {
     return (
@@ -39,7 +40,9 @@ function Checkout({ cart, setCart }: CheckoutProps) {
   const handleMessageUs = async () => {
     if (!user) return;
     setMessaging(true);
-    const summary = cart.map((item) => `${item.product.name} x${item.quantity}`).join("\n");
+    const summary = cart
+      .map((item) => `${item.product.name}${item.size ? ` (${item.size})` : ""} x${item.quantity}`)
+      .join("\n");
     const message = `Hi, I'd like to arrange payment for:\n${summary}\n\nTotal: ${formatNaira(total)}`;
     await sendMessage(message);
     setMessaging(false);
@@ -70,17 +73,28 @@ function Checkout({ cart, setCart }: CheckoutProps) {
         order_id: order.id,
         product_id: item.product.id,
         product_name: item.product.name,
-        product_price: item.product.price,
+        product_price: salePrice(item.product),
         quantity: item.quantity,
+        size: item.size,
       }));
 
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
       if (itemsError) throw new Error(itemsError.message);
 
+      // The database prices the order from the real product prices; charge
+      // exactly that, and stop if the cart was showing stale prices.
+      const { data: priced } = await supabase.from("orders").select("total").eq("id", order.id).single();
+      const amountDue = Number(priced?.total ?? total);
+      if (amountDue !== total) {
+        throw new Error(
+          `Some prices changed since you added them — your order total is now ${formatNaira(amountDue)}. Please review your cart and try again.`
+        );
+      }
+
       await openPaystackCheckout({
         key: publicKey,
         email: user.email ?? "",
-        amount: Math.round(total * 100),
+        amount: Math.round(amountDue * 100),
         ref: `dali-${order.id}-${Date.now()}`,
         metadata: { order_id: order.id },
         onSuccess: async (reference) => {
@@ -117,11 +131,12 @@ function Checkout({ cart, setCart }: CheckoutProps) {
         <h2 className="text-lg font-bold mb-4">Order Summary</h2>
         <div className="space-y-3 mb-4">
           {cart.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm text-gray-300">
+            <div key={item.key} className="flex justify-between text-sm text-gray-300">
               <span>
-                {item.product.name} x{item.quantity}
+                {item.product.name}
+                {item.size && ` (${item.size})`} x{item.quantity}
               </span>
-              <span>{formatNaira(item.product.price * item.quantity)}</span>
+              <span>{formatNaira(salePrice(item.product) * item.quantity)}</span>
             </div>
           ))}
         </div>
@@ -156,6 +171,18 @@ function Checkout({ cart, setCart }: CheckoutProps) {
           Back to Cart
         </button>
       </Link>
+
+      <p className="mt-4 text-center text-xs text-gray-400">
+        By placing an order you agree to our{" "}
+        <Link to="/shipping" className="text-[#00DA6B] hover:underline">
+          Shipping & Delivery
+        </Link>{" "}
+        and{" "}
+        <Link to="/returns" className="text-[#00DA6B] hover:underline">
+          Returns & Refunds
+        </Link>{" "}
+        policies.
+      </p>
     </div>
   );
 }

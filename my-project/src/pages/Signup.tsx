@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
 import PasswordInput from "../components/PasswordInput";
 
 function Signup() {
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Invite links shared from the app look like /signup?ref=DALIXXXXXX.
+  const [referralCode, setReferralCode] = useState(() => (searchParams.get("ref") ?? "").toUpperCase());
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
@@ -22,7 +25,7 @@ function Signup() {
     }
 
     setSubmitting(true);
-    const result = await signUp(email, password);
+    const result = await signUp(email, password, referralCode);
     setSubmitting(false);
 
     if (result.error) {
@@ -83,6 +86,15 @@ function Signup() {
               placeholder="At least 6 characters"
               minLength={6}
               required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Referral Code (optional)</label>
+            <input
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+              className="w-full bg-[#001D23] p-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00DA6B]"
+              placeholder="e.g. DALI3F9A2C"
             />
           </div>
 

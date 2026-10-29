@@ -65,11 +65,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null, needsConfirmation: false };
   };
 
-  const signUp = async (email: string, password: string): Promise<AuthResult> => {
+  const signUp = async (email: string, password: string, referralCode?: string): Promise<AuthResult> => {
+    // The database's signup trigger links the referral from this metadata.
+    const code = referralCode?.trim().toUpperCase();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+        data: code ? { referral_code: code } : undefined,
+      },
     });
     if (error) return { error: error.message, needsConfirmation: false };
     if (data.session) {

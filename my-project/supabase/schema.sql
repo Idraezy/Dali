@@ -374,7 +374,7 @@ create policy "messages_update"
 create table if not exists public.store_settings (
   id integer primary key default 1,
   whatsapp_number text not null default '2349164288560',
-  contact_email text not null default 'faithlawrence161@gmail.com',
+  contact_email text not null default 'daliwears@gmail.com',
   contact_phone text not null default '+234 (0)916 428 8560',
   updated_at timestamptz not null default now(),
   constraint store_settings_singleton check (id = 1)
@@ -487,6 +487,618 @@ create policy "partnership_applications_update"
   on public.partnership_applications for update
   using (public.is_admin())
   with check (public.is_admin());
+
+grant all privileges on all tables in schema public to anon, authenticated, service_role;
+grant all privileges on all sequences in schema public to anon, authenticated, service_role;
+
+-- =========================================
+-- Wave 5: delivery tracking, Dali Coins, app download links
+-- =========================================
+
+-- Delivery tracking ----------------------------------------------------------
+-- `status` stays the payment status (pending/paid/failed). `delivery_status`
+-- is the fulfilment stage the admin moves an order through; every change
+-- writes a row to order_tracking_events, which is the timeline customers see.
+
+alter table public.orders add column if not exists delivery_status text not null default 'processing';
+alter table public.orders drop constraint if exists orders_delivery_status_check;
+alter table public.orders add constraint orders_delivery_status_check
+  check (delivery_status in ('processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled'));
+alter table public.orders add column if not exists courier text;
+alter table public.orders add column if not exists tracking_number text;
+alter table public.orders add column if not exists shipping_name text;
+alter table public.orders add column if not exists shipping_phone text;
+alter table public.orders add column if not exists shipping_address text;
+alter table public.orders add column if not exists delivered_at timestamptz;
+
+create table if not exists public.order_tracking_events (
+  id bigint generated always as identity primary key,
+  order_id bigint not null references public.orders (id) on delete cascade,
+  stage text,
+  message text not null,
+  location text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists order_tracking_events_order_id_idx on public.order_tracking_events (order_id);
+
+alter table public.order_tracking_events enable row level security;
+
+drop policy if exists "order_tracking_events_select" on public.order_tracking_events;
+create policy "order_tracking_events_select"
+  on public.order_tracking_events for select
+  using (
+    exists (
+      select 1 from public.orders o
+      where o.id = order_tracking_events.order_id
+        and (o.user_id = auth.uid() or public.is_admin())
+    )
+  );
+
+drop policy if exists "order_tracking_events_write" on public.order_tracking_events;
+create policy "order_tracking_events_write"
+  on public.order_tracking_events for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- Customers create their own orders, so pin everything they must not choose:
+-- payment status, delivery stage and courier details. The delivery address is
+-- snapshotted from the profile so later profile edits don't rewrite history.
+create or replace function public.guard_new_order()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  p public.profiles;
+begin
+  if auth.role() <> 'service_role' and not public.is_admin() then
+    new.status := 'pending';
+    -- Rebuilt from the order's items by recalculate_order_total() below.
+    new.total := 0;
+    new.delivery_status := 'processing';
+    new.courier := null;
+    new.tracking_number := null;
+    new.delivered_at := null;
+  end if;
+
+  select * into p from public.profiles where id = new.user_id;
+  new.shipping_name := coalesce(nullif(new.shipping_name, ''), p.full_name);
+  new.shipping_phone := coalesce(nullif(new.shipping_phone, ''), p.phone);
+  new.shipping_address := coalesce(nullif(new.shipping_address, ''), p.address);
+  return new;
+end;
+$$;
+
+drop trigger if exists on_order_insert_guard on public.orders;
+create trigger on_order_insert_guard
+  before insert on public.orders
+  for each row execute function public.guard_new_order();
+
+-- Product extras: admins choose whether the stock count is shown to
+-- shoppers, add a photo gallery and short videos (image_url stays the cover
+-- photo, always images[1]), list the sizes on offer, and run a percentage
+-- discount that can end on a date.
+alter table public.products add column if not exists show_stock boolean not null default false;
+alter table public.products add column if not exists images text[] not null default '{}';
+alter table public.products add column if not exists videos text[] not null default '{}';
+alter table public.products add column if not exists sizes text[] not null default '{}';
+alter table public.products add column if not exists discount_percent integer
+  check (discount_percent between 1 and 90);
+alter table public.products add column if not exists discount_ends_at timestamptz;
+
+update public.products
+set images = array[image_url]
+where image_url is not null and cardinality(images) = 0;
+
+alter table public.order_items add column if not exists size text;
+
+-- The price a shopper actually pays, rounded to whole naira. The websites and
+-- app compute the same thing to display it (salePrice in lib/pricing).
+create or replace function public.product_sale_price(p public.products)
+returns numeric
+language sql
+stable
+as $$
+  select case
+    when p.discount_percent is not null
+      and (p.discount_ends_at is null or p.discount_ends_at > now())
+    then round(p.price * (100 - p.discount_percent) / 100)
+    else p.price
+  end;
+$$;
+
+-- Order totals come from real product prices, never from the customer's
+-- device: each item's name/price is copied from products (after any
+-- discount), and the order's total is re-summed after every item is added.
+-- Paystack verification then compares the amount paid against this database
+-- total. Items can only be added while the order is still awaiting payment,
+-- must be in stock, and must name one of the product's sizes if it has any.
+create or replace function public.price_order_item()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  o public.orders;
+  p public.products;
+begin
+  if auth.role() = 'service_role' or public.is_admin() then
+    return new;
+  end if;
+
+  select * into o from public.orders where id = new.order_id;
+  if o.status is distinct from 'pending' then
+    raise exception 'Items can''t be added to an order that has already been paid or closed.';
+  end if;
+
+  select * into p from public.products where id = new.product_id;
+  if p.id is null then
+    raise exception 'One of the products in your cart is no longer available.';
+  end if;
+
+  if p.stock < new.quantity then
+    if p.stock <= 0 then
+      raise exception '"%" is sold out. Please remove it from your cart.', p.name;
+    end if;
+    raise exception 'We don''t have enough of "%" left for that quantity.', p.name;
+  end if;
+
+  if cardinality(p.sizes) > 0 then
+    if new.size is null or not (new.size = any (p.sizes)) then
+      raise exception 'Please choose a size for "%".', p.name;
+    end if;
+  else
+    new.size := null;
+  end if;
+
+  new.product_name := p.name;
+  new.product_price := public.product_sale_price(p);
+  return new;
+end;
+$$;
+
+drop trigger if exists on_order_item_insert_price on public.order_items;
+create trigger on_order_item_insert_price
+  before insert on public.order_items
+  for each row execute function public.price_order_item();
+
+create or replace function public.recalculate_order_total()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.orders
+  set total = (
+    select coalesce(sum(product_price * quantity), 0)
+    from public.order_items
+    where order_id = new.order_id
+  )
+  where id = new.order_id;
+  return null;
+end;
+$$;
+
+drop trigger if exists on_order_item_insert_total on public.order_items;
+create trigger on_order_item_insert_total
+  after insert on public.order_items
+  for each row execute function public.recalculate_order_total();
+
+-- One Paystack payment can only ever pay for one order, so a receipt for an
+-- earlier order can't be replayed against a new order with the same total.
+create unique index if not exists orders_paystack_reference_key
+  on public.orders (paystack_reference) where paystack_reference is not null;
+
+create or replace function public.stamp_order_delivery()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.delivery_status = 'delivered' and old.delivery_status is distinct from 'delivered' then
+    new.delivered_at := now();
+  elsif new.delivery_status <> 'delivered' then
+    new.delivered_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_order_update_stamp_delivery on public.orders;
+create trigger on_order_update_stamp_delivery
+  before update on public.orders
+  for each row execute function public.stamp_order_delivery();
+
+create or replace function public.log_order_created()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.order_tracking_events (order_id, stage, message)
+  values (new.id, 'processing', 'Order submitted.');
+  return new;
+end;
+$$;
+
+drop trigger if exists on_order_created_log on public.orders;
+create trigger on_order_created_log
+  after insert on public.orders
+  for each row execute function public.log_order_created();
+
+-- Dali Coins ----------------------------------------------------------------
+-- Earning amounts and the cash-out value live in coin_settings so the admin
+-- can change them without a code change. naira_per_coin / min_redeem_coins /
+-- payout_schedule stay null until the business decides them, and the apps
+-- show "coming soon" while they're null.
+
+create table if not exists public.coin_settings (
+  id integer primary key default 1,
+  checkin_coins integer not null default 10 check (checkin_coins >= 0),
+  streak_bonus_coins integer not null default 50 check (streak_bonus_coins >= 0),
+  order_coins_per_1000 integer not null default 10 check (order_coins_per_1000 >= 0),
+  referral_coins integer not null default 200 check (referral_coins >= 0),
+  naira_per_coin numeric(12, 4) check (naira_per_coin is null or naira_per_coin > 0),
+  min_redeem_coins integer check (min_redeem_coins is null or min_redeem_coins > 0),
+  payout_schedule text,
+  updated_at timestamptz not null default now(),
+  constraint coin_settings_singleton check (id = 1)
+);
+
+insert into public.coin_settings (id) values (1) on conflict (id) do nothing;
+
+alter table public.coin_settings enable row level security;
+
+drop policy if exists "coin_settings_select" on public.coin_settings;
+create policy "coin_settings_select"
+  on public.coin_settings for select
+  using (true);
+
+drop policy if exists "coin_settings_update" on public.coin_settings;
+create policy "coin_settings_update"
+  on public.coin_settings for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- One wallet per user. Read-only to customers: every write goes through the
+-- SECURITY DEFINER functions below, so nobody can edit their own balance.
+create table if not exists public.coin_wallets (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  balance integer not null default 0,
+  checkin_streak integer not null default 0,
+  last_checkin_date date,
+  referral_code text not null unique,
+  referred_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.coin_wallets enable row level security;
+
+drop policy if exists "coin_wallets_select" on public.coin_wallets;
+create policy "coin_wallets_select"
+  on public.coin_wallets for select
+  using (user_id = auth.uid() or public.is_admin());
+
+create table if not exists public.coin_transactions (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  amount integer not null check (amount <> 0),
+  kind text not null check (kind in ('checkin', 'streak_bonus', 'order', 'referral', 'adjustment', 'redemption')),
+  description text not null,
+  order_id bigint references public.orders (id) on delete set null,
+  referred_user_id uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists coin_transactions_user_id_idx on public.coin_transactions (user_id);
+-- Each order pays out once, and each referred friend pays their referrer once.
+create unique index if not exists coin_transactions_order_once
+  on public.coin_transactions (order_id) where kind = 'order';
+create unique index if not exists coin_transactions_referral_once
+  on public.coin_transactions (referred_user_id) where kind = 'referral';
+
+alter table public.coin_transactions enable row level security;
+
+drop policy if exists "coin_transactions_select" on public.coin_transactions;
+create policy "coin_transactions_select"
+  on public.coin_transactions for select
+  using (user_id = auth.uid() or public.is_admin());
+
+create or replace function public.generate_referral_code()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  code text;
+begin
+  loop
+    code := 'DALI' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
+    exit when not exists (select 1 from public.coin_wallets where referral_code = code);
+  end loop;
+  return code;
+end;
+$$;
+
+create or replace function public.ensure_wallet(p_user uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.coin_wallets (user_id, referral_code)
+  values (p_user, public.generate_referral_code())
+  on conflict (user_id) do nothing;
+end;
+$$;
+
+create or replace function public.award_coins(
+  p_user uuid,
+  p_amount integer,
+  p_kind text,
+  p_description text,
+  p_order bigint default null,
+  p_referred uuid default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_amount = 0 then
+    return;
+  end if;
+  perform public.ensure_wallet(p_user);
+  insert into public.coin_transactions (user_id, amount, kind, description, order_id, referred_user_id)
+  values (p_user, p_amount, p_kind, p_description, p_order, p_referred);
+  update public.coin_wallets set balance = balance + p_amount where user_id = p_user;
+end;
+$$;
+
+-- Internal helpers: not callable from the apps.
+revoke execute on function public.generate_referral_code() from public, anon, authenticated;
+revoke execute on function public.ensure_wallet(uuid) from public, anon, authenticated;
+revoke execute on function public.award_coins(uuid, integer, text, text, bigint, uuid) from public, anon, authenticated;
+
+-- Daily check-in. Days are counted in Nigerian time; checking in on
+-- consecutive days grows the streak, and every 7th day adds the bonus.
+create or replace function public.daily_checkin()
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  today date := (now() at time zone 'Africa/Lagos')::date;
+  w public.coin_wallets;
+  s public.coin_settings;
+  new_streak integer;
+  earned integer := 0;
+begin
+  if uid is null then
+    raise exception 'You need to be signed in to check in.';
+  end if;
+
+  perform public.ensure_wallet(uid);
+  select * into w from public.coin_wallets where user_id = uid for update;
+
+  if w.last_checkin_date = today then
+    return json_build_object('checked_in', false, 'streak', w.checkin_streak, 'earned', 0, 'balance', w.balance);
+  end if;
+
+  select * into s from public.coin_settings where id = 1;
+  new_streak := case when w.last_checkin_date = today - 1 then w.checkin_streak + 1 else 1 end;
+
+  update public.coin_wallets
+  set checkin_streak = new_streak, last_checkin_date = today
+  where user_id = uid;
+
+  if s.checkin_coins > 0 then
+    perform public.award_coins(uid, s.checkin_coins, 'checkin', 'Daily check-in (day ' || new_streak || ')');
+    earned := earned + s.checkin_coins;
+  end if;
+
+  if new_streak % 7 = 0 and s.streak_bonus_coins > 0 then
+    perform public.award_coins(uid, s.streak_bonus_coins, 'streak_bonus', new_streak || '-day streak bonus');
+    earned := earned + s.streak_bonus_coins;
+  end if;
+
+  select * into w from public.coin_wallets where user_id = uid;
+  return json_build_object('checked_in', true, 'streak', new_streak, 'earned', earned, 'balance', w.balance);
+end;
+$$;
+
+-- For people who signed up without a referral code. Only allowed before
+-- their first paid order, and never your own code.
+create or replace function public.apply_referral_code(p_code text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  w public.coin_wallets;
+  referrer uuid;
+begin
+  if uid is null then
+    raise exception 'You need to be signed in.';
+  end if;
+
+  perform public.ensure_wallet(uid);
+  select * into w from public.coin_wallets where user_id = uid for update;
+
+  if w.referred_by is not null then
+    raise exception 'You have already used a referral code.';
+  end if;
+  if exists (select 1 from public.orders where user_id = uid and status = 'paid') then
+    raise exception 'Referral codes can only be added before your first order.';
+  end if;
+
+  select user_id into referrer from public.coin_wallets where referral_code = upper(trim(p_code));
+  if referrer is null then
+    raise exception 'That referral code doesn''t exist.';
+  end if;
+  if referrer = uid then
+    raise exception 'You can''t use your own referral code.';
+  end if;
+
+  update public.coin_wallets set referred_by = referrer where user_id = uid;
+end;
+$$;
+
+-- Wallet + referral on signup. A referral code can be passed in the signup
+-- metadata ({ referral_code }); any problem with it is ignored so it can
+-- never block an account from being created.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  referrer uuid;
+begin
+  insert into public.profiles (id, email)
+  values (new.id, new.email)
+  on conflict (id) do nothing;
+
+  begin
+    perform public.ensure_wallet(new.id);
+    if coalesce(new.raw_user_meta_data ->> 'referral_code', '') <> '' then
+      select user_id into referrer
+      from public.coin_wallets
+      where referral_code = upper(trim(new.raw_user_meta_data ->> 'referral_code'));
+      if referrer is not null and referrer <> new.id then
+        update public.coin_wallets set referred_by = referrer where user_id = new.id;
+      end if;
+    end if;
+  exception when others then
+    null;
+  end;
+
+  return new;
+end;
+$$;
+
+-- Wallets for everyone who signed up before coins existed.
+do $$
+declare
+  r record;
+begin
+  for r in select id from public.profiles loop
+    perform public.ensure_wallet(r.id);
+  end loop;
+end;
+$$;
+
+-- Order timeline + coin payouts. Coins are paid once an order is both paid
+-- and delivered (in either order), and the referrer is paid when the friend
+-- they referred receives their first such order.
+create or replace function public.on_order_updated()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  s public.coin_settings;
+  w public.coin_wallets;
+  coins integer;
+begin
+  if new.status = 'paid' and old.status is distinct from 'paid' then
+    insert into public.order_tracking_events (order_id, stage, message)
+    values (new.id, 'processing', 'Order paid successfully. We''re preparing your items.');
+  end if;
+
+  if new.delivery_status is distinct from old.delivery_status then
+    insert into public.order_tracking_events (order_id, stage, message)
+    values (
+      new.id,
+      new.delivery_status,
+      case new.delivery_status
+        when 'processing' then 'Your order is being prepared.'
+        when 'shipped' then 'Your order has been handed to ' || coalesce(new.courier, 'the courier') || '.'
+        when 'in_transit' then 'Your order is on its way.'
+        when 'out_for_delivery' then 'Your order is out for delivery.'
+        when 'delivered' then 'Your order has been delivered.'
+        when 'cancelled' then 'Your order was cancelled.'
+      end
+    );
+  end if;
+
+  if new.status = 'paid' and new.delivery_status = 'delivered'
+     and not (old.status = 'paid' and old.delivery_status = 'delivered') then
+    select * into s from public.coin_settings where id = 1;
+
+    coins := floor(new.total / 1000)::integer * s.order_coins_per_1000;
+    if coins > 0 and not exists (
+      select 1 from public.coin_transactions where kind = 'order' and order_id = new.id
+    ) then
+      perform public.award_coins(new.user_id, coins, 'order', 'Order #' || new.id || ' delivered', new.id);
+    end if;
+
+    select * into w from public.coin_wallets where user_id = new.user_id;
+    if w.referred_by is not null and s.referral_coins > 0 and not exists (
+      select 1 from public.coin_transactions where kind = 'referral' and referred_user_id = new.user_id
+    ) then
+      perform public.award_coins(
+        w.referred_by, s.referral_coins, 'referral',
+        'Referral reward: a friend you invited received their first order', null, new.user_id
+      );
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_order_updated on public.orders;
+create trigger on_order_updated
+  after update on public.orders
+  for each row execute function public.on_order_updated();
+
+-- App download links (the website's "Get App" page shows "coming soon"
+-- until these are filled in from admin Settings).
+alter table public.store_settings add column if not exists android_app_url text;
+alter table public.store_settings add column if not exists ios_app_url text;
+
+-- When an order is paid, take its items out of stock so a one-off piece
+-- can't be sold twice. Admins can still set any stock number by hand.
+create or replace function public.decrement_stock_on_paid()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.status = 'paid' and old.status is distinct from 'paid' then
+    update public.products p
+    set stock = greatest(p.stock - i.qty, 0)
+    from (
+      select product_id, sum(quantity) as qty
+      from public.order_items
+      where order_id = new.id and product_id is not null
+      group by product_id
+    ) i
+    where p.id = i.product_id;
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists on_order_paid_stock on public.orders;
+create trigger on_order_paid_stock
+  after update on public.orders
+  for each row execute function public.decrement_stock_on_paid();
 
 grant all privileges on all tables in schema public to anon, authenticated, service_role;
 grant all privileges on all sequences in schema public to anon, authenticated, service_role;

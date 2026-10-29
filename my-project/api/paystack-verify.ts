@@ -51,7 +51,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   );
   const verifyBody = (await verifyRes.json()) as PaystackVerifyResponse;
 
+  // A successful reference already attached to another order is a replayed
+  // receipt, not a new payment.
+  const { data: reusedBy } = await supabaseAdmin
+    .from("orders")
+    .select("id")
+    .eq("paystack_reference", reference)
+    .neq("id", order_id)
+    .maybeSingle();
+
   const paid =
+    !reusedBy &&
     verifyBody.status &&
     verifyBody.data?.status === "success" &&
     // Paystack amounts are in kobo; order.total is in naira.
@@ -63,10 +73,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  await supabaseAdmin
+  // The unique index on paystack_reference backs up the check above if two
+  // verifications race.
+  const { error: updateError } = await supabaseAdmin
     .from("orders")
     .update({ status: "paid", paystack_reference: reference })
     .eq("id", order_id);
+  if (updateError) {
+    await supabaseAdmin.from("orders").update({ status: "failed" }).eq("id", order_id);
+    res.status(200).json({ ok: true, status: "failed" });
+    return;
+  }
 
   await sendTelegramMessage(
     `💰 New paid order #${order_id}\nAmount: ₦${Number(order.total).toLocaleString("en-NG")}\nReference: ${reference}`
