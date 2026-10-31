@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react";
 
@@ -112,7 +112,9 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const INTERVAL_MS = 7000;
+const INTERVAL_MS = 3000;
+// How far a finger has to travel sideways to count as a swipe.
+const SWIPE_PX = 40;
 const FADE_MS = 700;
 
 function CopyBlock({ block, align }: { block: Copy; align?: "right" }) {
@@ -131,12 +133,13 @@ function CopyBlock({ block, align }: { block: Copy; align?: "right" }) {
 
 // Home page strip: three photos that take turns sliding across, each with
 // its write-up fading in beside it. Below the lg breakpoint the photo sits
-// above the text instead.
+// above the text instead. Advances every 3 seconds, or by swiping.
 export default function TrustSlideshow() {
   const [active, setActive] = useState(0);
   const [leaving, setLeaving] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const goTo = (next: number) => {
     if (next === active) return;
@@ -156,6 +159,27 @@ export default function TrustSlideshow() {
 
   useEffect(() => () => clearTimeout(leaveTimer.current), []);
 
+  // Swipe left for the next slide, right for the previous one. Mostly
+  // vertical drags are left alone so the page still scrolls.
+  const onTouchStart = (e: TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+    setPaused(true);
+  };
+
+  const onTouchEnd = (e: TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    setPaused(false);
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy)) return;
+    const step = dx < 0 ? 1 : SLIDES.length - 1;
+    goTo((active + step) % SLIDES.length);
+  };
+
   const photoStyle = (i: number, slide: Slide) => {
     if (i === active) return { transform: `translateX(${slide.to * 100}%)`, opacity: 1 };
     if (i === leaving) return { transform: `translateX(${slide.to * 100}%)`, opacity: 0 };
@@ -171,6 +195,12 @@ export default function TrustSlideshow() {
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={() => {
+        touchStart.current = null;
+        setPaused(false);
+      }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2 className="mb-10 text-center text-3xl font-bold sm:text-4xl">
