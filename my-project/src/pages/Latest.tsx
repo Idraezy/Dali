@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, X, Star, ShoppingCart, CircleCheckBig, Loader2, Heart, MessageCircle, Camera } from "lucide-react";
+import { Search, X, Star, ShoppingCart, CircleCheckBig, Heart, MessageCircle, Camera } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import ProductImage from "../components/ProductImage";
 import PriceTag from "../components/PriceTag";
@@ -9,7 +9,9 @@ import { useAuth } from "../lib/useAuth";
 import { useWishlist } from "../lib/useWishlist";
 import { useChat } from "../lib/useChat";
 import { supabase } from "../lib/supabaseClient";
-import { addItem, hasActiveDiscount, productImages, productSizes, stockLabel } from "../lib/pricing";
+import { addItem, hasActiveDiscount, isPreorder, isSoldOut, productImages, productSizes, stockLabel } from "../lib/pricing";
+import { shrinkPhoto, uploadPublic, withTimeout } from "../lib/media";
+import ProductGridSkeleton from "../components/ProductGridSkeleton";
 import type { CartItem, Product, Review } from "../lib/types";
 
 interface LatestProps {
@@ -135,44 +137,39 @@ function Latest({ cart, setCart }: LatestProps) {
     }
 
     setSubmittingReview(true);
+    try {
+      const imageUrl = reviewImage
+        ? await uploadPublic(supabase, "review-images", await shrinkPhoto(reviewImage), `${user.id}-`)
+        : null;
 
-    let imageUrl: string | null = null;
-    if (reviewImage) {
-      const ext = reviewImage.name.split(".").pop() || "jpg";
-      const path = `${user.id}-${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("review-images")
-        .upload(path, reviewImage);
-      if (uploadError) {
-        setSubmittingReview(false);
-        alert(uploadError.message);
-        return;
-      }
-      imageUrl = supabase.storage.from("review-images").getPublicUrl(path).data.publicUrl;
+      const { data, error: insertError } = await withTimeout(
+        Promise.resolve(
+          supabase
+            .from("reviews")
+            .insert({
+              product_id: selectedProduct.id,
+              user_id: user.id,
+              name: user.email?.split("@")[0] ?? "Customer",
+              rating: reviewForm.rating,
+              comment: reviewForm.comment,
+              image_url: imageUrl,
+            })
+            .select("*")
+            .single()
+        ),
+        20_000,
+        "Posting your review is taking too long. Check your connection and try again."
+      );
+      if (insertError) throw new Error(insertError.message);
+
+      setReviews([data as Review, ...reviews]);
+      setReviewForm({ rating: 5, comment: "" });
+      setReviewImage(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Could not post your review.");
+    } finally {
+      setSubmittingReview(false);
     }
-
-    const { data, error: insertError } = await supabase
-      .from("reviews")
-      .insert({
-        product_id: selectedProduct.id,
-        user_id: user.id,
-        name: user.email?.split("@")[0] ?? "Customer",
-        rating: reviewForm.rating,
-        comment: reviewForm.comment,
-        image_url: imageUrl,
-      })
-      .select("*")
-      .single();
-    setSubmittingReview(false);
-
-    if (insertError) {
-      alert(insertError.message);
-      return;
-    }
-
-    setReviews([data as Review, ...reviews]);
-    setReviewForm({ rating: 5, comment: "" });
-    setReviewImage(null);
   };
 
   const handleChatInquiry = async (product: Product) => {
@@ -275,9 +272,7 @@ function Latest({ cart, setCart }: LatestProps) {
 
       {/* Loading / Error / Empty states */}
       {loading && (
-        <div className="flex justify-center py-20 text-gray-400 gap-2">
-          <Loader2 className="animate-spin" /> Loading products...
-        </div>
+        <ProductGridSkeleton className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" />
       )}
 
       {!loading && error && (
@@ -307,7 +302,7 @@ function Latest({ cart, setCart }: LatestProps) {
                   src={product.image_url}
                   alt={product.name}
                   className={`w-full h-full group-hover:scale-110 transition-transform duration-300 ${
-                    product.stock <= 0 ? "opacity-60 grayscale" : ""
+                    isSoldOut(product) ? "opacity-60 grayscale" : ""
                   }`}
                 />
                 <div className="absolute top-3 left-3 flex flex-col items-start gap-1">
@@ -345,11 +340,11 @@ function Latest({ cart, setCart }: LatestProps) {
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleQuickAdd(product)}
-                    disabled={product.stock <= 0}
+                    disabled={isSoldOut(product)}
                     className="flex-1 bg-[#00DA6B] text-black font-bold py-2 rounded-lg hover:bg-[#1d9948] transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart size={16} />
-                    {product.stock <= 0 ? "Sold out" : "Add"}
+                    {isSoldOut(product) ? "Sold out" : isPreorder(product) ? "Pre-order" : "Add"}
                   </button>
                   <button
                     onClick={() => openProduct(product)}
@@ -465,6 +460,16 @@ function Latest({ cart, setCart }: LatestProps) {
                   </div>
                 )}
 
+                {isPreorder(selectedProduct) && (
+                  <div className="border border-[#00DA6B]/40 bg-[#00DA6B]/10 rounded-xl p-4 mb-4 text-sm">
+                    <span className="font-bold text-[#00DA6B]">Available on pre-order.</span>{" "}
+                    <span className="text-gray-300">
+                      {selectedProduct.preorder_note ||
+                        "We'll make or restock it and ship it to you as soon as it's ready."}
+                    </span>
+                  </div>
+                )}
+
                 <div className="bg-[#002a35] rounded-xl p-4 mb-4">
                   <h3 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">
                     About this item
@@ -494,10 +499,10 @@ function Latest({ cart, setCart }: LatestProps) {
 
                 <button
                   onClick={handleModalAdd}
-                  disabled={selectedProduct.stock <= 0}
+                  disabled={isSoldOut(selectedProduct)}
                   className="w-full bg-green-500 text-white font-bold py-2 md:py-3 rounded-lg hover:bg-green-600 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {selectedProduct.stock <= 0 ? "Out of stock" : "Add to Cart"}
+                  {isSoldOut(selectedProduct) ? "Out of stock" : isPreorder(selectedProduct) ? "Pre-order" : "Add to Cart"}
                 </button>
               </div>
             </div>
@@ -593,6 +598,7 @@ function Latest({ cart, setCart }: LatestProps) {
                       <p className="text-gray-300 text-xs md:text-sm mb-2">{review.comment}</p>
                       {review.image_url && (
                         <img
+                          loading="lazy"
                           src={review.image_url}
                           alt="Review attachment"
                           className="w-24 h-24 object-cover rounded-lg border border-gray-700"

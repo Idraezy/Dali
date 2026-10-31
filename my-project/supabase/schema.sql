@@ -594,6 +594,14 @@ where image_url is not null and cardinality(images) = 0;
 
 alter table public.order_items add column if not exists size text;
 
+-- Pre-order: when an item runs out, admins can keep it orderable. Shoppers
+-- see a "Pre-order" label and the admin note (e.g. "Ships in 2 weeks"), and
+-- each order line remembers whether it was a pre-order so admins know which
+-- items still have to be made or restocked.
+alter table public.products add column if not exists preorder boolean not null default false;
+alter table public.products add column if not exists preorder_note text;
+alter table public.order_items add column if not exists preorder boolean not null default false;
+
 -- The price a shopper actually pays, rounded to whole naira. The websites and
 -- app compute the same thing to display it (salePrice in lib/pricing).
 create or replace function public.product_sale_price(p public.products)
@@ -614,7 +622,8 @@ $$;
 -- discount), and the order's total is re-summed after every item is added.
 -- Paystack verification then compares the amount paid against this database
 -- total. Items can only be added while the order is still awaiting payment,
--- must be in stock, and must name one of the product's sizes if it has any.
+-- must be in stock (or open for pre-order), and must name one of the
+-- product's sizes if it has any.
 create or replace function public.price_order_item()
 returns trigger
 language plpgsql
@@ -639,7 +648,8 @@ begin
     raise exception 'One of the products in your cart is no longer available.';
   end if;
 
-  if p.stock < new.quantity then
+  new.preorder := p.stock < new.quantity;
+  if new.preorder and not p.preorder then
     if p.stock <= 0 then
       raise exception '"%" is sold out. Please remove it from your cart.', p.name;
     end if;

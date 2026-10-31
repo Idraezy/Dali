@@ -22,9 +22,25 @@ export function productImages(product: Product): string[] {
   return product.image_url ? [product.image_url] : [];
 }
 
-// Stock shoppers see: "Out of stock" always, the exact count only when the
-// admin has switched it on for this product.
+// Out of stock, but the admin is still taking orders for it.
+export function isPreorder(product: Product): boolean {
+  return product.stock <= 0 && !!product.preorder;
+}
+
+export function isSoldOut(product: Product): boolean {
+  return product.stock <= 0 && !product.preorder;
+}
+
+// The most a shopper can put in their cart, or null for no limit (pre-order
+// items, which the database flags once they go past the stock on hand).
+export function stockCap(product: Product): number | null {
+  return product.preorder || product.stock <= 0 ? null : product.stock;
+}
+
+// Stock shoppers see: "Pre-order" or "Out of stock" always, the exact count
+// only when the admin has switched it on for this product.
 export function stockLabel(product: Product): string | null {
+  if (isPreorder(product)) return "Pre-order";
   if (product.stock <= 0) return "Out of stock";
   if (product.show_stock) {
     return product.stock <= 5 ? `Only ${product.stock} left` : `${product.stock} in stock`;
@@ -48,7 +64,7 @@ export function normalizeCart(saved: CartItem[]): CartItem[] {
 // Adds to the matching product+size line, never past the stock on hand.
 export function addItem(cart: CartItem[], product: Product, quantity = 1, size: string | null = null): CartItem[] {
   const key = cartKey(product.id, size);
-  const cap = product.stock > 0 ? product.stock : quantity;
+  const cap = stockCap(product) ?? Infinity;
   const existing = cart.find((item) => item.key === key);
   if (existing) {
     return cart.map((item) =>

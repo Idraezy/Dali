@@ -5,6 +5,7 @@ import PriceTag from "../../components/PriceTag";
 import { supabase } from "../../lib/supabaseClient";
 import { useProducts } from "../../lib/useProducts";
 import { productImages } from "../../lib/pricing";
+import { shrinkPhoto, uploadPublic, withTimeout } from "../../lib/media";
 import type { Product } from "../../lib/types";
 
 const SIZE_PRESETS = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -21,6 +22,8 @@ const EMPTY_FORM = {
   sizes: [] as string[],
   discount_percent: "",
   discount_ends: "",
+  preorder: false,
+  preorder_note: "",
   is_featured: false,
 };
 
@@ -46,22 +49,18 @@ function releaseMedia(items: MediaItem[]) {
   for (const item of items) if (item.file) URL.revokeObjectURL(item.url);
 }
 
-async function uploadMedia(items: MediaItem[]): Promise<string[]> {
-  const urls: string[] = [];
-  for (const item of items) {
-    if (!item.file) {
-      urls.push(item.url);
-      continue;
-    }
-    const ext = item.file.name.split(".").pop() || "bin";
-    const path = `${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("product-images")
-      .upload(path, item.file, { contentType: item.file.type });
-    if (uploadError) throw new Error(`${item.file.name}: ${uploadError.message}`);
-    urls.push(supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl);
-  }
-  return urls;
+// Photos are shrunk first; every new file uploads at the same time.
+// onUploaded is called after each file finishes, for the progress label.
+function uploadMedia(items: MediaItem[], shrink: boolean, onUploaded: () => void): Promise<string[]> {
+  return Promise.all(
+    items.map(async (item) => {
+      if (!item.file) return item.url;
+      const file = shrink ? await shrinkPhoto(item.file) : item.file;
+      const url = await uploadPublic(supabase, "product-images", file);
+      onUploaded();
+      return url;
+    })
+  );
 }
 
 function AdminProducts() {
@@ -73,6 +72,7 @@ function AdminProducts() {
   const [videos, setVideos] = useState<MediaItem[]>([]);
   const [customSize, setCustomSize] = useState("");
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const categories = useMemo(
@@ -111,6 +111,8 @@ function AdminProducts() {
       discount_ends: product.discount_ends_at
         ? new Date(product.discount_ends_at).toLocaleDateString("en-CA")
         : "",
+      preorder: product.preorder ?? false,
+      preorder_note: product.preorder_note ?? "",
       is_featured: product.is_featured,
     });
     resetMedia(toMedia(productImages(product)), toMedia(product.videos ?? []));
@@ -180,8 +182,18 @@ function AdminProducts() {
 
     setSaving(true);
     try {
-      const imageUrls = await uploadMedia(photos);
-      const videoUrls = await uploadMedia(videos);
+      const total = [...photos, ...videos].filter((item) => item.file).length;
+      let done = 0;
+      const onUploaded = () => {
+        done += 1;
+        setProgress(`Uploading ${done} of ${total}...`);
+      };
+      if (total > 0) setProgress(`Uploading 0 of ${total}...`);
+      const [imageUrls, videoUrls] = await Promise.all([
+        uploadMedia(photos, true, onUploaded),
+        uploadMedia(videos, false, onUploaded),
+      ]);
+      setProgress("Saving...");
 
       const payload = {
         name: form.name.trim(),
@@ -196,22 +208,24 @@ function AdminProducts() {
           discount !== null && form.discount_ends
             ? new Date(`${form.discount_ends}T23:59:59`).toISOString()
             : null,
+        preorder: form.preorder,
+        preorder_note: form.preorder && form.preorder_note.trim() ? form.preorder_note.trim() : null,
         is_featured: form.is_featured,
         image_url: imageUrls[0] ?? null,
         images: imageUrls,
         videos: videoUrls,
       };
 
-      if (editing) {
-        const { error: updateError } = await supabase
-          .from("products")
-          .update(payload)
-          .eq("id", editing.id);
-        if (updateError) throw new Error(updateError.message);
-      } else {
-        const { error: insertError } = await supabase.from("products").insert(payload);
-        if (insertError) throw new Error(insertError.message);
-      }
+      const { error: saveError } = await withTimeout(
+        Promise.resolve(
+          editing
+            ? supabase.from("products").update(payload).eq("id", editing.id)
+            : supabase.from("products").insert(payload)
+        ),
+        20_000,
+        "Saving is taking too long. Check your connection and try again."
+      );
+      if (saveError) throw new Error(saveError.message);
 
       setShowForm(false);
       resetMedia([], []);
@@ -220,6 +234,7 @@ function AdminProducts() {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setSaving(false);
+      setProgress("");
     }
   };
 
@@ -283,6 +298,11 @@ function AdminProducts() {
                       {product.show_stock && (
                         <span title="Shown to customers">
                           <Eye size={14} className="text-gray-400" />
+                        </span>
+                      )}
+                      {product.preorder && (
+                        <span className="text-[10px] font-semibold border border-gray-500 rounded-full px-1.5">
+                          Pre-order
                         </span>
                       )}
                     </span>
@@ -389,6 +409,32 @@ function AdminProducts() {
                 </span>
               </label>
 
+              <div className="bg-[#002A35] rounded-lg p-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.preorder}
+                    onChange={(e) => setForm({ ...form, preorder: e.target.checked })}
+                    className="accent-[#00DA6B] mt-1"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold">Allow pre-orders</span>
+                    <span className="block text-xs text-gray-400">
+                      When the quantity reaches 0, customers can still order it and it shows as
+                      "Pre-order". Pre-ordered items are marked on the order.
+                    </span>
+                  </span>
+                </label>
+                {form.preorder && (
+                  <input
+                    placeholder="Note for customers, e.g. Ships in 2 weeks"
+                    value={form.preorder_note}
+                    onChange={(e) => setForm({ ...form, preorder_note: e.target.value })}
+                    className={`${inputClass} mt-3`}
+                  />
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold mb-1">Category</label>
                 <input
@@ -487,7 +533,9 @@ function AdminProducts() {
 
               <div>
                 <label className="block text-sm font-semibold">Photos</label>
-                <p className="text-xs text-gray-400 mb-2">The first photo is the cover.</p>
+                <p className="text-xs text-gray-400 mb-2">
+                  The first photo is the cover. Photos are resized automatically for fast uploads.
+                </p>
                 <div className="grid grid-cols-4 gap-2">
                   {photos.map((item, i) => (
                     <div key={item.url} className="relative aspect-square rounded-lg overflow-hidden bg-[#002A35]">
@@ -535,7 +583,10 @@ function AdminProducts() {
 
               <div>
                 <label className="block text-sm font-semibold">Short videos</label>
-                <p className="text-xs text-gray-400 mb-2">Up to {MAX_VIDEO_MB} MB each. MP4 works everywhere.</p>
+                <p className="text-xs text-gray-400 mb-2">
+                  Up to {MAX_VIDEO_MB} MB each. MP4 works everywhere. Short clips (under 15 seconds)
+                  upload much faster.
+                </p>
                 <div className="grid grid-cols-4 gap-2">
                   {videos.map((item, i) => (
                     <div key={item.url} className="relative aspect-square rounded-lg overflow-hidden bg-black">
@@ -585,7 +636,7 @@ function AdminProducts() {
                 className="w-full flex items-center justify-center gap-2 bg-[#00DA6B] text-black font-bold py-3 rounded-lg hover:bg-[#1d9948] transition disabled:opacity-60"
               >
                 {saving && <Loader2 size={18} className="animate-spin" />}
-                {saving ? "Uploading & saving..." : editing ? "Save Changes" : "Add Product"}
+                {saving ? progress || "Saving..." : editing ? "Save Changes" : "Add Product"}
               </button>
             </form>
           </div>

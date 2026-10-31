@@ -12,6 +12,8 @@ export interface Product {
   sizes: string[];
   discount_percent: number | null;
   discount_ends_at: string | null;
+  preorder: boolean;
+  preorder_note: string | null;
   is_featured: boolean;
   created_at: string;
 }
@@ -78,6 +80,7 @@ export interface OrderItem {
   product_price: number;
   quantity: number;
   size: string | null;
+  preorder: boolean;
 }
 
 export interface Profile {

@@ -229,7 +229,7 @@ function OrderCard({ order, onChanged }: { order: OrderRow; onChanged: () => Pro
               <div key={item.id} className="flex justify-between gap-2">
                 <span>
                   {item.product_name}
-                  {item.size && ` (Size ${item.size})`} x{item.quantity}
+                  {item.size && ` (Size ${item.size})`} x{item.quantity}{item.preorder && " · Pre-order"}
                 </span>
                 <span>{formatNaira(item.product_price * item.quantity)}</span>
               </div>

@@ -231,12 +231,12 @@ function TrackOrder() {
           {items.map((item) => (
             <div key={item.id} className="relative w-24 h-28 rounded-lg overflow-hidden bg-[#002A35]">
               {item.products?.image_url ? (
-                <img src={item.products.image_url} alt={item.product_name} className="w-full h-full object-cover" />
+                <img loading="lazy" src={item.products.image_url} alt={item.product_name} className="w-full h-full object-cover" />
               ) : (
                 <Package size={30} className="text-gray-500 m-auto mt-10" />
               )}
               <span className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/90 text-gray-900 text-xs font-bold rounded-full min-w-8 h-8 px-2 whitespace-nowrap flex items-center justify-center">
-                {item.size && `${item.size} · `}x{item.quantity}
+                {item.size && `${item.size} · `}x{item.quantity}{item.preorder && " · Pre-order"}
               </span>
             </div>
           ))}

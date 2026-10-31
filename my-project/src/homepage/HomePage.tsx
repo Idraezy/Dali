@@ -12,6 +12,7 @@ import home6 from "../assets/home6.jpg";
 import home7 from "../assets/home7.jpg";
 
 import FeaturedProduct from "./FeaturedProduct";
+import TrustSlideshow from "./TrustSlideshow";
 
 // =======================
 // Launch Notification Modal
@@ -268,6 +269,7 @@ function HomePage() {
         </div>
 
         <FeaturedProduct />
+        <TrustSlideshow />
       </div>
     </>
   );

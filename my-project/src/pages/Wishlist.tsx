@@ -5,7 +5,7 @@ import ProductImage from "../components/ProductImage";
 import { supabase } from "../lib/supabaseClient";
 import { useWishlist } from "../lib/useWishlist";
 import PriceTag from "../components/PriceTag";
-import { addItem, productSizes, stockLabel } from "../lib/pricing";
+import { addItem, isPreorder, isSoldOut, productSizes, stockLabel } from "../lib/pricing";
 import type { CartItem, Product } from "../lib/types";
 
 interface WishlistProps {
@@ -97,11 +97,17 @@ function Wishlist({ cart, setCart }: WishlistProps) {
               <p className="text-gray-400 text-xs mb-3 h-4">{stockLabel(product)}</p>
               <button
                 onClick={() => handleAddToCart(product)}
-                disabled={product.stock <= 0}
+                disabled={isSoldOut(product)}
                 className="w-full bg-[#00DA6B] text-black font-bold py-2 rounded-lg hover:bg-[#1d9948] transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingCart size={16} />
-                {product.stock <= 0 ? "Out of stock" : productSizes(product).length > 0 ? "Choose size" : "Add to Cart"}
+                {isSoldOut(product)
+                  ? "Out of stock"
+                  : productSizes(product).length > 0
+                    ? "Choose size"
+                    : isPreorder(product)
+                      ? "Pre-order"
+                      : "Add to Cart"}
               </button>
             </div>
           </div>

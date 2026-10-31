@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShoppingBag, Loader2 } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import ProductImage from "../components/ProductImage";
 import PriceTag from "../components/PriceTag";
+import ProductGridSkeleton from "../components/ProductGridSkeleton";
 import { useProducts } from "../lib/useProducts";
 
 function FeaturedProduct() {
@@ -26,9 +27,7 @@ function FeaturedProduct() {
       </motion.div>
 
       {loading && (
-        <div className="flex justify-center py-12 text-gray-400 gap-2">
-          <Loader2 className="animate-spin" /> Loading featured products...
-        </div>
+        <ProductGridSkeleton count={4} className="grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" />
       )}
 
       {!loading && featured.length === 0 && (

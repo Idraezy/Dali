@@ -3,7 +3,7 @@ import { Trash2, Plus, Minus } from "lucide-react";
 import ProductImage from "../components/ProductImage";
 import { useAuth } from "../lib/useAuth";
 import { formatNaira } from "../lib/format";
-import { salePrice } from "../lib/pricing";
+import { isPreorder, salePrice, stockCap } from "../lib/pricing";
 import type { CartItem } from "../lib/types";
 
 export type { CartItem };
@@ -30,7 +30,7 @@ function Cart({ cart, setCart }: CartProps) {
     setCart(
       cart.map((item) =>
         item.key === key
-          ? { ...item, quantity: item.product.stock > 0 ? Math.min(quantity, item.product.stock) : quantity }
+          ? { ...item, quantity: Math.min(quantity, stockCap(item.product) ?? Infinity) }
           : item
       )
     );
@@ -84,6 +84,11 @@ function Cart({ cart, setCart }: CartProps) {
                   <p className="text-gray-400 text-sm">
                     {item.size && <>Size: {item.size} · </>}Category: {item.product.category}
                   </p>
+                  {isPreorder(item.product) && (
+                    <p className="text-[#00DA6B] text-xs mt-1">
+                      Pre-order{item.product.preorder_note ? ` · ${item.product.preorder_note}` : ""}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -97,7 +102,8 @@ function Cart({ cart, setCart }: CartProps) {
                     <span className="px-4 font-bold">{item.quantity}</span>
                     <button
                       onClick={() => handleUpdateQuantity(item.key, item.quantity + 1)}
-                      className="p-2 hover:bg-[#003a45] rounded transition"
+                      disabled={item.quantity >= (stockCap(item.product) ?? Infinity)}
+                      className="p-2 hover:bg-[#003a45] rounded transition disabled:opacity-40"
                     >
                       <Plus size={18} />
                     </button>
