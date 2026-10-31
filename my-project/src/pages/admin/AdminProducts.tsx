@@ -1,10 +1,11 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Eye, Film, ImagePlus, Loader2, Pencil, Plus, Star, Trash2, X } from "lucide-react";
+import { Eye, Film, ImagePlus, Loader2, Pencil, Plus, RotateCw, Star, Trash2, X } from "lucide-react";
 import ProductImage from "../../components/ProductImage";
 import PriceTag from "../../components/PriceTag";
 import { supabase } from "../../lib/supabaseClient";
 import { useProducts } from "../../lib/useProducts";
 import { productImages } from "../../lib/pricing";
+import { sizeLabel } from "../../lib/sizes";
 import { shrinkPhoto, uploadPublic, withTimeout } from "../../lib/media";
 import type { Product } from "../../lib/types";
 
@@ -30,36 +31,81 @@ const EMPTY_FORM = {
 const inputClass =
   "w-full bg-[#002A35] p-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00DA6B] disabled:opacity-50";
 
-// A photo or video in the form: either already uploaded (url) or a file
-// picked just now (previewed through a blob: url until it's uploaded).
+// A photo or video in the form. Ones already saved have their url; files
+// picked now start uploading straight away (shown through a blob: preview)
+// and get their url when the upload finishes.
 interface MediaItem {
-  url: string;
+  id: string;
+  preview: string;
+  url?: string;
   file?: File;
+  progress: number; // 0–1
+  error?: string;
 }
 
+type SetMedia = (update: (list: MediaItem[]) => MediaItem[]) => void;
+
 function toMedia(urls: string[]): MediaItem[] {
-  return urls.map((url) => ({ url }));
+  return urls.map((url) => ({ id: url, preview: url, url, progress: 1 }));
 }
 
 function fromFiles(files: FileList | null): MediaItem[] {
-  return Array.from(files ?? []).map((file) => ({ file, url: URL.createObjectURL(file) }));
+  return Array.from(files ?? []).map((file) => ({
+    id: crypto.randomUUID(),
+    preview: URL.createObjectURL(file),
+    file,
+    progress: 0,
+  }));
 }
 
 function releaseMedia(items: MediaItem[]) {
-  for (const item of items) if (item.file) URL.revokeObjectURL(item.url);
+  for (const item of items) if (item.file) URL.revokeObjectURL(item.preview);
 }
 
-// Photos are shrunk first; every new file uploads at the same time.
-// onUploaded is called after each file finishes, for the progress label.
-function uploadMedia(items: MediaItem[], shrink: boolean, onUploaded: () => void): Promise<string[]> {
-  return Promise.all(
-    items.map(async (item) => {
-      if (!item.file) return item.url;
-      const file = shrink ? await shrinkPhoto(item.file) : item.file;
-      const url = await uploadPublic(supabase, "product-images", file);
-      onUploaded();
-      return url;
-    })
+// Uploads run in the background while the admin fills in the rest of the
+// form; each tile shows its own progress. Photos are shrunk first.
+function startUploads(items: MediaItem[], setItems: SetMedia, shrink: boolean) {
+  for (const item of items) {
+    if (!item.file) continue;
+    const file = item.file;
+    const update = (patch: Partial<MediaItem>) =>
+      setItems((list) => list.map((m) => (m.id === item.id ? { ...m, ...patch } : m)));
+    update({ progress: 0, error: undefined });
+    (async () => {
+      try {
+        const ready = shrink ? await shrinkPhoto(file) : file;
+        const url = await uploadPublic(supabase, "product-images", ready, "", (p) => update({ progress: p }));
+        update({ url, progress: 1 });
+      } catch (err) {
+        update({ error: err instanceof Error ? err.message : "Upload failed." });
+      }
+    })();
+  }
+}
+
+function UploadOverlay({ item, onRetry }: { item: MediaItem; onRetry: () => void }) {
+  if (item.error) {
+    return (
+      <button
+        type="button"
+        onClick={onRetry}
+        title={item.error}
+        className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-red-600/80 text-[11px] font-semibold text-white"
+      >
+        <RotateCw size={16} /> Retry
+      </button>
+    );
+  }
+  if (item.url) return null;
+  return (
+    <div className="absolute inset-0 flex items-end bg-black/40">
+      <div className="m-1.5 h-1.5 flex-1 overflow-hidden rounded-full bg-white/40">
+        <div
+          className="h-full rounded-full bg-white transition-[width]"
+          style={{ width: `${Math.max(5, Math.round(item.progress * 100))}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -72,8 +118,11 @@ function AdminProducts() {
   const [videos, setVideos] = useState<MediaItem[]>([]);
   const [customSize, setCustomSize] = useState("");
   const [saving, setSaving] = useState(false);
-  const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const media = [...photos, ...videos];
+  const uploading = media.filter((m) => !m.url && !m.error).length;
+  const failed = media.filter((m) => m.error).length;
 
   const categories = useMemo(
     () => Array.from(new Set(products.map((p) => p.category))).sort(),
@@ -128,9 +177,13 @@ function AdminProducts() {
     }));
   };
 
+  // "8, 10, 12" adds three sizes.
   const addCustomSize = () => {
-    const size = customSize.trim();
-    if (size && !form.sizes.includes(size)) setForm((f) => ({ ...f, sizes: [...f.sizes, size] }));
+    const added = customSize
+      .split(",")
+      .map((size) => size.trim())
+      .filter(Boolean);
+    setForm((f) => ({ ...f, sizes: [...f.sizes, ...added.filter((size) => !f.sizes.includes(size))] }));
     setCustomSize("");
   };
 
@@ -140,7 +193,15 @@ function AdminProducts() {
       setError(`"${tooBig.name}" is over ${MAX_VIDEO_MB} MB. Please use a shorter clip.`);
       return;
     }
-    setVideos((v) => [...v, ...fromFiles(files)]);
+    const items = fromFiles(files);
+    setVideos((v) => [...v, ...items]);
+    startUploads(items, setVideos, false);
+  };
+
+  const addPhotos = (files: FileList | null) => {
+    const items = fromFiles(files);
+    setPhotos((p) => [...p, ...items]);
+    startUploads(items, setPhotos, true);
   };
 
   const removeAt = (setter: typeof setPhotos, index: number) => {
@@ -180,20 +241,17 @@ function AdminProducts() {
       return;
     }
 
+    if (failed > 0) {
+      setError("Some photos or videos didn't upload. Tap Retry on them, or remove them.");
+      return;
+    }
+    if (uploading > 0) return;
+
+    const imageUrls = photos.map((m) => m.url!);
+    const videoUrls = videos.map((m) => m.url!);
+
     setSaving(true);
     try {
-      const total = [...photos, ...videos].filter((item) => item.file).length;
-      let done = 0;
-      const onUploaded = () => {
-        done += 1;
-        setProgress(`Uploading ${done} of ${total}...`);
-      };
-      if (total > 0) setProgress(`Uploading 0 of ${total}...`);
-      const [imageUrls, videoUrls] = await Promise.all([
-        uploadMedia(photos, true, onUploaded),
-        uploadMedia(videos, false, onUploaded),
-      ]);
-      setProgress("Saving...");
 
       const payload = {
         name: form.name.trim(),
@@ -234,7 +292,6 @@ function AdminProducts() {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setSaving(false);
-      setProgress("");
     }
   };
 
@@ -469,7 +526,7 @@ function AdminProducts() {
                           : "border-gray-600 text-gray-300 hover:border-[#00DA6B]"
                       }`}
                     >
-                      {size}
+                      {sizeLabel(size)}
                     </button>
                   ))}
                 </div>
@@ -534,12 +591,14 @@ function AdminProducts() {
               <div>
                 <label className="block text-sm font-semibold">Photos</label>
                 <p className="text-xs text-gray-400 mb-2">
-                  The first photo is the cover. Photos are resized automatically for fast uploads.
+                  The first photo is the cover. Uploads start as soon as you pick them, so you can
+                fill in the rest while they finish.
                 </p>
                 <div className="grid grid-cols-4 gap-2">
                   {photos.map((item, i) => (
-                    <div key={item.url} className="relative aspect-square rounded-lg overflow-hidden bg-[#002A35]">
-                      <img src={item.url} alt="" className="w-full h-full object-cover" />
+                    <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden bg-[#002A35]">
+                      <img src={item.preview} alt="" className="w-full h-full object-cover" />
+                    <UploadOverlay item={item} onRetry={() => startUploads([item], setPhotos, true)} />
                       {i === 0 ? (
                         <span className="absolute bottom-1 left-1 bg-black/70 text-[10px] font-bold px-1.5 rounded">
                           Cover
@@ -572,7 +631,7 @@ function AdminProducts() {
                       accept="image/*"
                       multiple
                       onChange={(e) => {
-                        setPhotos((p) => [...p, ...fromFiles(e.target.files)]);
+                        addPhotos(e.target.files);
                         e.target.value = "";
                       }}
                       className="hidden"
@@ -589,8 +648,9 @@ function AdminProducts() {
                 </p>
                 <div className="grid grid-cols-4 gap-2">
                   {videos.map((item, i) => (
-                    <div key={item.url} className="relative aspect-square rounded-lg overflow-hidden bg-black">
-                      <video src={item.url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                    <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden bg-black">
+                      <video src={item.preview} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                    <UploadOverlay item={item} onRetry={() => startUploads([item], setVideos, false)} />
                       <button
                         type="button"
                         onClick={() => removeAt(setVideos, i)}
@@ -632,11 +692,17 @@ function AdminProducts() {
 
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || uploading > 0}
                 className="w-full flex items-center justify-center gap-2 bg-[#00DA6B] text-black font-bold py-3 rounded-lg hover:bg-[#1d9948] transition disabled:opacity-60"
               >
-                {saving && <Loader2 size={18} className="animate-spin" />}
-                {saving ? progress || "Saving..." : editing ? "Save Changes" : "Add Product"}
+                {(saving || uploading > 0) && <Loader2 size={18} className="animate-spin" />}
+                {saving
+                  ? "Saving..."
+                  : uploading > 0
+                    ? `Uploading ${uploading} file${uploading === 1 ? "" : "s"}...`
+                    : editing
+                      ? "Save Changes"
+                      : "Add Product"}
               </button>
             </form>
           </div>

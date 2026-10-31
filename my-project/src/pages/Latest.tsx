@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, X, Star, ShoppingCart, CircleCheckBig, Heart, MessageCircle, Camera } from "lucide-react";
+import { Search, X, Star, ShoppingCart, CircleCheckBig, Heart, MessageCircle, Camera, ChevronRight, Ruler } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import ProductImage from "../components/ProductImage";
 import PriceTag from "../components/PriceTag";
@@ -12,6 +12,8 @@ import { supabase } from "../lib/supabaseClient";
 import { addItem, hasActiveDiscount, isPreorder, isSoldOut, productImages, productSizes, stockLabel } from "../lib/pricing";
 import { shrinkPhoto, uploadPublic, withTimeout } from "../lib/media";
 import ProductGridSkeleton from "../components/ProductGridSkeleton";
+import SizeGuide from "../components/SizeGuide";
+import { sizeLabel } from "../lib/sizes";
 import type { CartItem, Product, Review } from "../lib/types";
 
 interface LatestProps {
@@ -32,6 +34,7 @@ function Latest({ cart, setCart }: LatestProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [sizeMissing, setSizeMissing] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
@@ -106,7 +109,7 @@ function Latest({ cart, setCart }: LatestProps) {
 
   const handleAddToCart = (product: Product, size: string | null = null) => {
     setCart(addItem(cart, product, 1, size));
-    setNotification(size ? `${product.name} (${size})` : product.name);
+    setNotification(size ? `${product.name} (${sizeLabel(size)})` : product.name);
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -433,10 +436,18 @@ function Latest({ cart, setCart }: LatestProps) {
 
                 {productSizes(selectedProduct).length > 0 && (
                   <div className="mb-4">
-                    <p className={`text-sm font-semibold mb-2 ${sizeMissing ? "text-red-400" : ""}`}>
-                      {sizeMissing ? "Please choose a size" : "Size"}
-                      {selectedSize && <span className="text-gray-400 font-normal"> · {selectedSize}</span>}
-                    </p>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <p className={`text-sm font-semibold ${sizeMissing ? "text-red-400" : ""}`}>
+                        {sizeMissing ? "Please choose a size" : "Size"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSizeGuideOpen(true)}
+                        className="inline-flex items-center text-sm text-gray-400 hover:text-white"
+                      >
+                        US <ChevronRight size={14} />
+                      </button>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {productSizes(selectedProduct).map((size) => (
                         <button
@@ -453,10 +464,18 @@ function Latest({ cart, setCart }: LatestProps) {
                               : "border-gray-600 text-white hover:border-[#00DA6B]"
                           }`}
                         >
-                          {size}
+                          {sizeLabel(size)}
                         </button>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setSizeGuideOpen(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
+                    >
+                      <Ruler size={16} /> Size Guide <ChevronRight size={14} />
+                    </button>
+                    <SizeGuide open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} />
                   </div>
                 )}
 

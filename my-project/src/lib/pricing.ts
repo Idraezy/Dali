@@ -12,8 +12,15 @@ export function salePrice(product: Product): number {
   return Math.round((Number(product.price) * (100 - product.discount_percent!)) / 100);
 }
 
+const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
+
+// Sizes smallest first (XS → XXL), then any others in the order they were added.
 export function productSizes(product: Product): string[] {
-  return product.sizes ?? [];
+  const rank = (size: string) => {
+    const i = SIZE_ORDER.indexOf(size.trim().toUpperCase());
+    return i < 0 ? SIZE_ORDER.length : i;
+  };
+  return [...(product.sizes ?? [])].sort((a, b) => rank(a) - rank(b));
 }
 
 // Every photo, cover first. Older rows (and old carts) may only have image_url.

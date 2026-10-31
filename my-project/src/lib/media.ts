@@ -41,22 +41,96 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, message: string)
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
-// Uploads to a public bucket and returns the file's public URL. Allows
-// 30 seconds plus 10 seconds per MB, enough for slow mobile data.
+// Give up on an attempt only when no bytes have moved for this long, so a
+// big video on slow data keeps going as long as it is making progress.
+const STALL_MS = 45_000;
+const ATTEMPTS = 3;
+// Several big files at once just split a weak connection between them, so
+// at most this many upload together and the rest wait their turn.
+const MAX_PARALLEL = 2;
+
+let running = 0;
+const waiting: (() => void)[] = [];
+
+async function takeTurn<T>(job: () => Promise<T>): Promise<T> {
+  if (running >= MAX_PARALLEL) await new Promise<void>((resolve) => waiting.push(resolve));
+  running += 1;
+  try {
+    return await job();
+  } finally {
+    running -= 1;
+    waiting.shift()?.();
+  }
+}
+
+function sendOnce(url: string, token: string, file: File, onProgress?: (fraction: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    let stall: ReturnType<typeof setTimeout>;
+    const resetStall = () => {
+      clearTimeout(stall);
+      stall = setTimeout(() => xhr.abort(), STALL_MS);
+    };
+
+    xhr.open("POST", url);
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("apikey", import.meta.env.VITE_SUPABASE_ANON_KEY);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.upload.onprogress = (e) => {
+      resetStall();
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      clearTimeout(stall);
+      if (xhr.status >= 200 && xhr.status < 300) return resolve();
+      let message = `Upload failed (${xhr.status})`;
+      try {
+        message = JSON.parse(xhr.responseText).message ?? message;
+      } catch {
+        // Not JSON; keep the status message.
+      }
+      // Permission and size errors won't fix themselves; don't retry them.
+      reject(Object.assign(new Error(message), { final: xhr.status >= 400 && xhr.status < 500 }));
+    };
+    xhr.onerror = () => {
+      clearTimeout(stall);
+      reject(new Error("The connection dropped during upload."));
+    };
+    xhr.onabort = () => reject(new Error("The upload stopped making progress."));
+    resetStall();
+    xhr.send(file);
+  });
+}
+
+// Uploads to a public bucket and returns the file's public URL. Reports
+// progress (0–1), and retries up to three times if the connection drops.
 export async function uploadPublic(
   supabase: SupabaseClient,
   bucket: string,
   file: File,
-  prefix = ""
+  prefix = "",
+  onProgress?: (fraction: number) => void
 ): Promise<string> {
-  const ext = file.name.split(".").pop() || "bin";
-  const path = `${prefix}${crypto.randomUUID()}.${ext}`;
-  const ms = 30_000 + (file.size / (1024 * 1024)) * 10_000;
-  const { error } = await withTimeout(
-    supabase.storage.from(bucket).upload(path, file, { contentType: file.type }),
-    ms,
-    `"${file.name}" is taking too long to upload. Check your connection and try again.`
-  );
-  if (error) throw new Error(`${file.name}: ${error.message}`);
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  return takeTurn(async () => {
+    const ext = file.name.split(".").pop() || "bin";
+    for (let attempt = 1; ; attempt++) {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const path = `${prefix}${crypto.randomUUID()}.${ext}`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/${bucket}/${path}`;
+      try {
+        onProgress?.(0);
+        await sendOnce(url, token, file, onProgress);
+        onProgress?.(1);
+        return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+      } catch (err) {
+        const final = (err as { final?: boolean }).final;
+        if (final || attempt >= ATTEMPTS) {
+          throw new Error(`${file.name}: ${(err as Error).message}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
+      }
+    }
+  });
 }

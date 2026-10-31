@@ -4,6 +4,7 @@ import ProductImage from "../components/ProductImage";
 import { useAuth } from "../lib/useAuth";
 import { formatNaira } from "../lib/format";
 import { isPreorder, salePrice, stockCap } from "../lib/pricing";
+import { sizeLabel } from "../lib/sizes";
 import type { CartItem } from "../lib/types";
 
 export type { CartItem };
@@ -82,7 +83,7 @@ function Cart({ cart, setCart }: CartProps) {
                     {formatNaira(salePrice(item.product))}
                   </p>
                   <p className="text-gray-400 text-sm">
-                    {item.size && <>Size: {item.size} · </>}Category: {item.product.category}
+                    {item.size && <>Size: {sizeLabel(item.size)} · </>}Category: {item.product.category}
                   </p>
                   {isPreorder(item.product) && (
                     <p className="text-[#00DA6B] text-xs mt-1">
